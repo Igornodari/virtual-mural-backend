@@ -1,0 +1,71 @@
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Review } from './entities/review.entity';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { User } from '../users/entities/user.entity';
+import { ServicesService } from '../services/services.service';
+import { MessagingService } from '../messaging/messaging.service';
+import { MuralEvents } from '../messaging/events/mural.events';
+
+@Injectable()
+export class ReviewsService {
+  constructor(
+    @InjectRepository(Review)
+    private readonly reviewsRepo: Repository<Review>,
+    private readonly servicesService: ServicesService,
+    private readonly messagingService: MessagingService,
+  ) {}
+
+  async create(dto: CreateReviewDto, author: User): Promise<Review> {
+    // Garante que o usuário não avaliou o mesmo serviço mais de uma vez
+    const existing = await this.reviewsRepo.findOne({
+      where: { serviceId: dto.serviceId, authorId: author.id },
+    });
+    if (existing) {
+      throw new ConflictException('Você já avaliou este serviço.');
+    }
+
+    const review = this.reviewsRepo.create({
+      ...dto,
+      authorId: author.id,
+    });
+
+    const saved = await this.reviewsRepo.save(review);
+
+    // Recalcula o rating do serviço
+    await this.servicesService.recalcRating(dto.serviceId);
+
+    // Publica evento no RabbitMQ
+    await this.messagingService.publish(MuralEvents.REVIEW_SUBMITTED, {
+      reviewId: saved.id,
+      serviceId: saved.serviceId,
+      authorId: author.id,
+      authorName: author.displayName ?? author.email,
+      rating: saved.rating,
+    });
+
+    return saved;
+  }
+
+  async findByService(serviceId: string): Promise<Review[]> {
+    return this.reviewsRepo.find({
+      where: { serviceId },
+      relations: ['author'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findOne(id: string): Promise<Review> {
+    const review = await this.reviewsRepo.findOne({
+      where: { id },
+      relations: ['author', 'service'],
+    });
+    if (!review) throw new NotFoundException(`Avaliação ${id} não encontrada.`);
+    return review;
+  }
+}
