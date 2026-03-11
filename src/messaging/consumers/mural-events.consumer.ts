@@ -1,19 +1,25 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { MessagingService } from '../messaging.service';
 import { MuralEvents } from '../events/mural.events';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 /**
  * Consumidor de eventos do Mural Virtual.
  *
- * Este serviço escuta a fila RabbitMQ e reage a cada evento publicado.
- * Em produção, aqui você integraria com serviços de notificação (SNS, SES,
- * push notifications, WebSockets, etc.).
+ * Escuta a fila RabbitMQ e aciona notificações reais via AWS SNS e SES
+ * para cada evento relevante do sistema.
+ *
+ * Fluxo:
+ *   RabbitMQ queue → MuralEventsConsumer → NotificationsService → SNS / SES
  */
 @Injectable()
 export class MuralEventsConsumer implements OnModuleInit {
   private readonly logger = new Logger(MuralEventsConsumer.name);
 
-  constructor(private readonly messagingService: MessagingService) {}
+  constructor(
+    private readonly messagingService: MessagingService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     await this.messagingService.consume(async (event, payload) => {
@@ -40,57 +46,165 @@ export class MuralEventsConsumer implements OnModuleInit {
     });
   }
 
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
   /**
    * Novo serviço publicado no mural.
-   * TODO: Notificar todos os moradores do condomínio (SNS/SES/Push).
+   * Notifica todos os moradores do condomínio via SNS.
+   *
+   * Payload esperado:
+   *   { serviceId, serviceName, providerName, condominiumId, category, price }
    */
   private async onServiceCreated(payload: Record<string, unknown>): Promise<void> {
+    const { serviceName, providerName, condominiumId, category, price } = payload as {
+      serviceName: string;
+      providerName: string;
+      condominiumId: string;
+      category: string;
+      price: string;
+    };
+
     this.logger.log(
-      `[service.created] Novo serviço "${payload['serviceName']}" ` +
-        `publicado por "${payload['providerName']}" no condomínio ${payload['condominiumId']}.`,
+      `[service.created] "${serviceName}" publicado por "${providerName}" ` +
+        `no condomínio ${condominiumId}.`,
     );
-    // Exemplo de integração futura:
-    // await this.notificationService.notifyCondominiumResidents(payload.condominiumId, {
-    //   title: 'Novo serviço disponível!',
-    //   body: `${payload.providerName} oferece: ${payload.serviceName}`,
-    // });
+
+    await this.notifications.notifyCondominiumResidents(
+      condominiumId,
+      `Novo serviço disponível: ${serviceName}`,
+      [
+        `${providerName} acabou de publicar um novo serviço no mural do seu condomínio!`,
+        '',
+        `📋 Serviço: ${serviceName}`,
+        `🏷️  Categoria: ${category}`,
+        `💰 Preço: ${price}`,
+        '',
+        'Acesse o Mural do Condomínio para ver mais detalhes e entrar em contato.',
+      ].join('\n'),
+    );
   }
 
   /**
    * Novo agendamento solicitado por um morador.
-   * TODO: Notificar o prestador de serviço.
+   * Notifica o prestador via SES (e-mail direto).
+   *
+   * Payload esperado:
+   *   { appointmentId, serviceId, serviceName, customerId, customerName,
+   *     providerEmail, providerName, scheduledDate, scheduledDay }
    */
   private async onAppointmentRequested(payload: Record<string, unknown>): Promise<void> {
+    const {
+      serviceName,
+      customerName,
+      providerEmail,
+      providerName,
+      scheduledDate,
+      scheduledDay,
+    } = payload as {
+      serviceName: string;
+      customerName: string;
+      providerEmail: string;
+      providerName: string;
+      scheduledDate: string;
+      scheduledDay: string;
+    };
+
     this.logger.log(
-      `[appointment.requested] "${payload['customerName']}" agendou o serviço ` +
-        `${payload['serviceId']} para ${payload['scheduledDate']} (${payload['scheduledDay']}).`,
+      `[appointment.requested] "${customerName}" agendou "${serviceName}" ` +
+        `para ${scheduledDate} (${scheduledDay}).`,
     );
-    // Exemplo de integração futura:
-    // await this.notificationService.notifyProvider(payload.serviceId, {
-    //   title: 'Novo agendamento!',
-    //   body: `${payload.customerName} quer agendar para ${payload.scheduledDay}.`,
-    // });
+
+    if (providerEmail) {
+      await this.notifications.sendAppointmentRequestEmail(
+        providerEmail,
+        providerName,
+        customerName,
+        serviceName,
+        scheduledDay,
+        scheduledDate,
+      );
+    }
   }
 
   /**
-   * Status de um agendamento alterado.
-   * TODO: Notificar o morador sobre confirmação ou cancelamento.
+   * Status de um agendamento alterado (confirmado, cancelado, concluído).
+   * Notifica o morador via SES.
+   *
+   * Payload esperado:
+   *   { appointmentId, status, serviceName, customerEmail, customerName, providerName }
    */
   private async onAppointmentStatusChanged(payload: Record<string, unknown>): Promise<void> {
+    const { appointmentId, status, serviceName, customerEmail, customerName, providerName } =
+      payload as {
+        appointmentId: string;
+        status: string;
+        serviceName: string;
+        customerEmail: string;
+        customerName: string;
+        providerName: string;
+      };
+
     this.logger.log(
-      `[appointment.status_changed] Agendamento ${payload['appointmentId']} ` +
-        `alterado para "${payload['status']}".`,
+      `[appointment.status_changed] Agendamento ${appointmentId} → "${status}".`,
     );
+
+    const statusLabels: Record<string, string> = {
+      confirmed: 'confirmado ✅',
+      cancelled: 'cancelado ❌',
+      completed: 'concluído 🎉',
+    };
+    const label = statusLabels[status] ?? status;
+
+    if (customerEmail) {
+      await this.notifications.sendEmail({
+        to: [customerEmail],
+        subject: `Seu agendamento foi ${label} — ${serviceName}`,
+        bodyText: [
+          `Olá, ${customerName}!`,
+          '',
+          `Seu agendamento para o serviço "${serviceName}" com ${providerName} foi ${label}.`,
+          '',
+          status === 'confirmed'
+            ? 'O prestador confirmou o horário. Fique atento ao dia combinado!'
+            : status === 'cancelled'
+              ? 'Caso precise reagendar, acesse o Mural do Condomínio.'
+              : 'Esperamos que o serviço tenha atendido suas expectativas. Não esqueça de avaliar!',
+          '',
+          '— Equipe Virtual Mural',
+        ].join('\n'),
+      });
+    }
   }
 
   /**
    * Nova avaliação enviada por um morador.
-   * TODO: Notificar o prestador sobre a nova avaliação.
+   * Notifica o prestador via SES.
+   *
+   * Payload esperado:
+   *   { reviewId, serviceId, serviceName, authorName, providerEmail,
+   *     providerName, rating, comment }
    */
   private async onReviewSubmitted(payload: Record<string, unknown>): Promise<void> {
+    const { serviceName, authorName, providerEmail, providerName, rating } = payload as {
+      serviceName: string;
+      authorName: string;
+      providerEmail: string;
+      providerName: string;
+      rating: number;
+    };
+
     this.logger.log(
-      `[review.submitted] "${payload['authorName']}" avaliou o serviço ` +
-        `${payload['serviceId']} com nota ${payload['rating']}.`,
+      `[review.submitted] "${authorName}" avaliou "${serviceName}" com nota ${rating}.`,
     );
+
+    if (providerEmail) {
+      await this.notifications.sendReviewNotificationEmail(
+        providerEmail,
+        providerName,
+        authorName,
+        serviceName,
+        rating,
+      );
+    }
   }
 }
