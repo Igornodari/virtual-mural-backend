@@ -37,15 +37,19 @@ export class ReviewsService {
 
     const saved = await this.reviewsRepo.save(review);
 
-    // Recalcula o rating do serviço
+    // Recalcula o rating do serviço e carrega dados do prestador para o evento
     await this.servicesService.recalcRating(dto.serviceId);
+    const service = await this.servicesService.findOne(dto.serviceId);
 
-    // Publica evento no RabbitMQ
+    // Publica evento no RabbitMQ com dados completos para o SES
     await this.messagingService.publish(MuralEvents.REVIEW_SUBMITTED, {
       reviewId: saved.id,
       serviceId: saved.serviceId,
+      serviceName: service?.name ?? '',
       authorId: author.id,
       authorName: author.displayName ?? author.email,
+      providerEmail: service?.provider?.email ?? '',
+      providerName: service?.provider?.displayName ?? service?.provider?.email ?? '',
       rating: saved.rating,
     });
 

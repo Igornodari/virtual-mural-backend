@@ -9,6 +9,7 @@ import { Appointment } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
 import { User } from '../users/entities/user.entity';
+import { Service } from '../services/entities/service.entity';
 import { MessagingService } from '../messaging/messaging.service';
 import { MuralEvents } from '../messaging/events/mural.events';
 
@@ -17,6 +18,8 @@ export class AppointmentsService {
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentsRepo: Repository<Appointment>,
+    @InjectRepository(Service)
+    private readonly servicesRepo: Repository<Service>,
     private readonly messagingService: MessagingService,
   ) {}
 
@@ -31,12 +34,21 @@ export class AppointmentsService {
 
     const saved = await this.appointmentsRepo.save(appointment);
 
-    // Notifica o prestador via RabbitMQ
+    // Carrega o serviço com o prestador para enriquecer o evento RabbitMQ
+    const service = await this.servicesRepo.findOne({
+      where: { id: dto.serviceId },
+      relations: ['provider'],
+    });
+
+    // Notifica o prestador via RabbitMQ com todos os dados necessários para o SES
     await this.messagingService.publish(MuralEvents.APPOINTMENT_REQUESTED, {
       appointmentId: saved.id,
       serviceId: saved.serviceId,
+      serviceName: service?.name ?? '',
       customerId: customer.id,
       customerName: customer.displayName ?? customer.email,
+      providerEmail: service?.provider?.email ?? '',
+      providerName: service?.provider?.displayName ?? service?.provider?.email ?? '',
       scheduledDate: saved.scheduledDate,
       scheduledDay: saved.scheduledDay,
     });
@@ -63,7 +75,7 @@ export class AppointmentsService {
   async findOne(id: string): Promise<Appointment> {
     const appointment = await this.appointmentsRepo.findOne({
       where: { id },
-      relations: ['service', 'customer'],
+      relations: ['service', 'service.provider', 'customer'],
     });
     if (!appointment) {
       throw new NotFoundException(`Agendamento ${id} não encontrado.`);
@@ -88,6 +100,18 @@ export class AppointmentsService {
     }
 
     appointment.status = dto.status;
-    return this.appointmentsRepo.save(appointment);
+    const saved = await this.appointmentsRepo.save(appointment);
+
+    // Notifica o morador sobre a mudança de status via RabbitMQ
+    await this.messagingService.publish(MuralEvents.APPOINTMENT_STATUS_CHANGED, {
+      appointmentId: saved.id,
+      status: saved.status,
+      serviceName: appointment.service?.name ?? '',
+      customerEmail: appointment.customer?.email ?? '',
+      customerName: appointment.customer?.displayName ?? appointment.customer?.email ?? '',
+      providerName: appointment.service?.provider?.displayName ?? '',
+    });
+
+    return saved;
   }
 }
