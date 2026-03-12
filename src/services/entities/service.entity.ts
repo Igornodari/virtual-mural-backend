@@ -45,6 +45,23 @@ export class Service {
   @Column({ default: true })
   isActive: boolean;
 
+  // ── Métricas de engajamento ────────────────────────────────────────────────
+  /** Número de vezes que o card foi expandido/visualizado */
+  @Column({ default: 0 })
+  clicks: number;
+
+  /** Número de vezes que o botão "Entrar em contato" foi clicado */
+  @Column({ default: 0 })
+  interests: number;
+
+  /** Número de agendamentos com status COMPLETED */
+  @Column({ default: 0 })
+  completions: number;
+
+  /** Número de agendamentos com status CANCELLED */
+  @Column({ default: 0 })
+  abandonments: number;
+
   // ── Relacionamentos ────────────────────────────────────────────────────────
   @ManyToOne(() => User, (user) => user.services, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'providerId' })

@@ -50,10 +50,26 @@ export class ServicesController {
     return this.servicesService.findByCondominium(cid);
   }
 
+  /** Deve vir ANTES de :id para não ser interceptado como UUID */
+  @Get('analytics/me')
+  @ApiOperation({ summary: 'Retorna analytics de todos os serviços do prestador autenticado' })
+  getProviderAnalytics(@CurrentUser() user: User) {
+    return this.servicesService.getProviderAnalytics(user.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Retorna detalhes de um serviço com avaliações' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.servicesService.findOne(id);
+  }
+
+  @Get(':id/analytics')
+  @ApiOperation({ summary: 'Retorna analytics de um serviço específico (apenas o prestador dono)' })
+  getAnalytics(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.servicesService.getAnalytics(id, user.id);
   }
 
   @Patch(':id')
@@ -64,6 +80,16 @@ export class ServicesController {
     @CurrentUser() user: User,
   ) {
     return this.servicesService.update(id, dto, user.id);
+  }
+
+  @Patch(':id/track/:metric')
+  @ApiOperation({ summary: 'Registra um evento de métrica (clicks, interests, completions, abandonments)' })
+  trackMetric(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('metric') metric: 'clicks' | 'interests' | 'completions' | 'abandonments',
+    @CurrentUser() user: User,
+  ) {
+    return this.servicesService.trackMetric(id, metric, user.id);
   }
 
   @Delete(':id')

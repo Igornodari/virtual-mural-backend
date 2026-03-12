@@ -6,12 +6,13 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
+import type { Channel, ChannelModel } from 'amqplib';
 
 @Injectable()
 export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MessagingService.name);
-  private connection: amqp.Connection | null = null;
-  private channel: amqp.Channel | null = null;
+  private connection: ChannelModel | null = null;
+  private channel: Channel | null = null;
   private readonly queue: string;
   private readonly url: string;
 

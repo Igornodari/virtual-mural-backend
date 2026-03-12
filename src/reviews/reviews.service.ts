@@ -12,6 +12,14 @@ import { ServicesService } from '../services/services.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { MuralEvents } from '../messaging/events/mural.events';
 
+/** Formato anônimo retornado ao listar avaliações de um serviço */
+export interface AnonymousReview {
+  id: string;
+  rating: number;
+  comment?: string;
+  createdAt: Date;
+}
+
 @Injectable()
 export class ReviewsService {
   constructor(
@@ -34,7 +42,6 @@ export class ReviewsService {
       ...dto,
       authorId: author.id,
     });
-
     const saved = await this.reviewsRepo.save(review);
 
     // Recalcula o rating do serviço e carrega dados do prestador para o evento
@@ -56,12 +63,23 @@ export class ReviewsService {
     return saved;
   }
 
-  async findByService(serviceId: string): Promise<Review[]> {
-    return this.reviewsRepo.find({
+  /**
+   * Lista avaliações de um serviço de forma ANÔNIMA.
+   * Nenhum dado de identificação do autor é retornado.
+   */
+  async findByService(serviceId: string): Promise<AnonymousReview[]> {
+    const reviews = await this.reviewsRepo.find({
       where: { serviceId },
-      relations: ['author'],
       order: { createdAt: 'DESC' },
+      // Não carrega a relação 'author' intencionalmente — anonimização
     });
+
+    return reviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment ?? undefined,
+      createdAt: r.createdAt,
+    }));
   }
 
   async findOne(id: string): Promise<Review> {
