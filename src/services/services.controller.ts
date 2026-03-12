@@ -71,4 +71,18 @@ export class ServicesController {
   remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.servicesService.remove(id, user.id);
   }
+
+  @Patch(':id/track/:metric')
+  @ApiOperation({
+    summary: 'Registra métrica de engajamento (aberto a qualquer usuário autenticado)',
+    description:
+      'Chamado automaticamente pelo frontend quando o cliente interage com o serviço. ' +
+      'Não requer ser o dono do serviço. Métricas: clicks, interests, completions, abandonments.',
+  })
+  trackMetric(
+    @Param('id') id: string,
+    @Param('metric') metric: 'clicks' | 'interests' | 'completions' | 'abandonments',
+  ) {
+    return this.servicesService.trackMetric(id, metric);
+  }
 }
