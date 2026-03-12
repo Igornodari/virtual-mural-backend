@@ -98,6 +98,21 @@ export class ServicesService {
   }
 
   /**
+   * Incrementa um contador de métrica de engajamento.
+   * Pode ser chamado por qualquer usuário autenticado (cliente ou prestador).
+   * O registro é feito automaticamente pelo uso do cliente — sem restrição de owner.
+   */
+  async trackMetric(
+    id: string,
+    metric: 'clicks' | 'interests' | 'completions' | 'abandonments',
+  ): Promise<void> {
+    const service = await this.servicesRepo.findOne({ where: { id } });
+    if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
+    service[metric] = (service[metric] ?? 0) + 1;
+    await this.servicesRepo.save(service);
+  }
+
+  /**
    * Recalcula a média de avaliações do serviço.
    * Chamado pelo ReviewsService após cada nova avaliação.
    */
