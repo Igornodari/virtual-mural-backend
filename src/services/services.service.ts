@@ -12,6 +12,19 @@ import { User } from '../users/entities/user.entity';
 import { MessagingService } from '../messaging/messaging.service';
 import { MuralEvents } from '../messaging/events/mural.events';
 
+export interface ServiceAnalytics {
+  serviceId: string;
+  serviceName: string;
+  clicks: number;
+  interests: number;
+  completions: number;
+  abandonments: number;
+  rating: number;
+  totalReviews: number;
+  ratingDistribution: Record<number, number>;
+  recentComments: Array<{ rating: number; comment: string; createdAt: Date }>;
+}
+
 @Injectable()
 export class ServicesService {
   constructor(
@@ -110,6 +123,77 @@ export class ServicesService {
     if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
     service[metric] = (service[metric] ?? 0) + 1;
     await this.servicesRepo.save(service);
+  }
+
+  /**
+   * Retorna analytics de um serviço específico.
+   * Apenas o prestador responsável pode acessar.
+   */
+  async getAnalytics(id: string, requesterId: string): Promise<ServiceAnalytics> {
+    const service = await this.servicesRepo.findOne({
+      where: { id },
+      relations: ['reviews'],
+    });
+    if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
+    if (service.providerId !== requesterId) {
+      throw new ForbiddenException(
+        'Apenas o prestador responsável pode visualizar os analytics.',
+      );
+    }
+    const reviews = service.reviews ?? [];
+    const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews.forEach((r) => {
+      ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
+    });
+    const recentComments = reviews
+      .filter((r) => r.comment)
+      .slice(0, 10)
+      .map((r) => ({ rating: r.rating, comment: r.comment ?? '', createdAt: r.createdAt }));
+    return {
+      serviceId: service.id,
+      serviceName: service.name,
+      clicks: service.clicks ?? 0,
+      interests: service.interests ?? 0,
+      completions: service.completions ?? 0,
+      abandonments: service.abandonments ?? 0,
+      rating: service.rating ?? 0,
+      totalReviews: service.totalReviews ?? 0,
+      ratingDistribution,
+      recentComments,
+    };
+  }
+
+  /**
+   * Retorna analytics de todos os serviços de um prestador.
+   */
+  async getProviderAnalytics(providerId: string): Promise<ServiceAnalytics[]> {
+    const services = await this.servicesRepo.find({
+      where: { providerId, isActive: true },
+      relations: ['reviews'],
+    });
+    return services.map((service) => {
+      const reviews = service.reviews ?? [];
+      const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      reviews.forEach((r) => {
+        ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
+      });
+      const recentComments = reviews
+        .filter((r) => r.comment)
+        .slice(0, 5)
+        .map((r) => ({ rating: r.rating, comment: r.comment ?? '', createdAt: r.createdAt }));
+      return {
+        serviceId: service.id,
+        serviceName: service.name,
+        clicks: service.clicks ?? 0,
+        interests: service.interests ?? 0,
+        completions: service.completions ?? 0,
+        abandonments: service.abandonments ?? 0,
+        rating: service.rating ?? 0,
+        totalReviews: service.totalReviews ?? 0,
+        ratingDistribution,
+        recentComments,
+      };
+    });
   }
 
   /**
