@@ -5,10 +5,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule, {
-    // rawBody é necessário para validar a assinatura do webhook do Stripe
-    rawBody: true,
-  });
+  const app = await NestFactory.create(AppModule);
 
   // ── Prefixo global da API ────────────────────────────────────────────────────────
   app.setGlobalPrefix('api/v1');
@@ -48,7 +45,6 @@ async function bootstrap() {
     .addTag('services', 'Serviços oferecidos por prestadores')
     .addTag('appointments', 'Agendamentos de serviços')
     .addTag('reviews', 'Avaliações de serviços')
-    .addTag('payments', 'Pagamentos in-app via Stripe Connect')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

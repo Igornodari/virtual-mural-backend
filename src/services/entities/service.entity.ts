@@ -24,19 +24,8 @@ export class Service {
   @Column({ type: 'text' })
   description: string;
 
-  /**
-   * Preço legado em texto (mantido para compatibilidade com registros antigos).
-   * Novos serviços devem usar priceInCents.
-   */
-  @Column({ nullable: true })
+  @Column()
   price: string;
-
-  /**
-   * Preço em centavos BRL para pagamentos in-app.
-   * Ex: 5000 = R$ 50,00. Null = serviço sem preço fixo (contato via WhatsApp).
-   */
-  @Column({ type: 'integer', nullable: true })
-  priceInCents: number;
 
   @Column()
   contact: string;
@@ -46,13 +35,6 @@ export class Service {
 
   @Column('simple-array')
   availableDays: string[];
-
-  /**
-   * Horários disponíveis para agendamento. Ex: ["09:00","14:00","18:00"]
-   * Null = sem horário fixo.
-   */
-  @Column('simple-array', { nullable: true })
-  availableSlots: string[];
 
   @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
   rating: number;
