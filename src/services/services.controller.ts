@@ -84,6 +84,19 @@ export class ServicesController {
     return this.servicesService.remove(id, user.id);
   }
 
+  @Patch(':id/slots')
+  @ApiOperation({
+    summary: 'Atualiza os horários disponíveis de um serviço (apenas o prestador dono)',
+    description: 'Define os horários em que o prestador aceita agendamentos. Ex: ["09:00","14:00","18:00"]',
+  })
+  updateSlots(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { slots: string[] },
+    @CurrentUser() user: User,
+  ) {
+    return this.servicesService.updateSlots(id, body.slots, user.id);
+  }
+
   @Patch(':id/track/:metric')
   @ApiOperation({
     summary: 'Registra métrica de engajamento (aberto a qualquer usuário autenticado)',

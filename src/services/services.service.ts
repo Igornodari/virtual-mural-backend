@@ -197,6 +197,26 @@ export class ServicesService {
   }
 
   /**
+   * Atualiza os horários disponíveis de um serviço.
+   * Apenas o prestador dono pode alterar.
+   */
+  async updateSlots(
+    id: string,
+    slots: string[],
+    requesterId: string,
+  ): Promise<Service> {
+    const service = await this.servicesRepo.findOne({ where: { id } });
+    if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
+    if (service.providerId !== requesterId) {
+      throw new ForbiddenException(
+        'Apenas o prestador responsável pode configurar os horários.',
+      );
+    }
+    service.availableSlots = slots;
+    return this.servicesRepo.save(service);
+  }
+
+  /**
    * Recalcula a média de avaliações do serviço.
    * Chamado pelo ReviewsService após cada nova avaliação.
    */

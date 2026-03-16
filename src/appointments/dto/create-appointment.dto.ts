@@ -15,6 +15,11 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   scheduledDay: string;
 
+  @ApiPropertyOptional({ example: '14:00', description: 'Horário do agendamento (HH:mm)' })
+  @IsOptional()
+  @IsString()
+  scheduledSlot?: string;
+
   @ApiPropertyOptional({ example: 'Preciso trocar o sifão da pia da cozinha.' })
   @IsOptional()
   @IsString()
