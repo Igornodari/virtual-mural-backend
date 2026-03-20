@@ -15,7 +15,9 @@ export class CreateServiceDto {
   @MaxLength(100)
   name: string;
 
-  @ApiProperty({ example: 'Conserto de vazamentos, instalação de torneiras e tubulações.' })
+  @ApiProperty({
+    example: 'Conserto de vazamentos, instalação de torneiras e tubulações.',
+  })
   @IsString()
   @IsNotEmpty()
   description: string;
@@ -44,7 +46,10 @@ export class CreateServiceDto {
   @IsString({ each: true })
   availableDays: string[];
 
-  @ApiPropertyOptional({ description: 'UUID do condomínio (preenchido automaticamente pelo backend se omitido)' })
+  @ApiPropertyOptional({
+    description:
+      'UUID do condomínio (preenchido automaticamente pelo backend se omitido)',
+  })
   @IsOptional()
   @IsString()
   condominiumId?: string;

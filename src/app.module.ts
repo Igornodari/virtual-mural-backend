@@ -24,7 +24,10 @@ import { NotificationsModule } from './notifications/notifications.module';
         database: config.get<string>('DB_NAME', 'virtual_mural'),
         autoLoadEntities: true,
         synchronize: config.get<string>('DB_SYNC', 'true') === 'true',
-        logging: config.get<string>('NODE_ENV') === 'development',
+        logging:
+          config.get<string>('NODE_ENV') === 'development'
+            ? ['error', 'warn']
+            : false,
         ssl:
           config.get<string>('NODE_ENV') === 'production'
             ? { rejectUnauthorized: false }

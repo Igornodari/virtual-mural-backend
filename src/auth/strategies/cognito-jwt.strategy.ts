@@ -49,7 +49,9 @@ export class CognitoJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: CognitoJwtPayload) {
     if (payload.token_use !== 'id') {
-      throw new UnauthorizedException('Token inválido: use o ID Token do Cognito.');
+      throw new UnauthorizedException(
+        'Token inválido: use o ID Token do Cognito.',
+      );
     }
 
     // Upsert automático: cria o perfil do usuário na primeira vez que ele faz login

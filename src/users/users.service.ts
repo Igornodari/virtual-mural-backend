@@ -22,10 +22,6 @@ export class UsersService {
     private readonly usersRepo: Repository<User>,
   ) {}
 
-  /**
-   * Cria ou atualiza o usuário com base no sub do Cognito.
-   * Chamado automaticamente pela estratégia JWT a cada request autenticado.
-   */
   async findOrCreateByCognito(data: CognitoUserData): Promise<User> {
     let user = await this.usersRepo.findOne({
       where: { cognitoSub: data.cognitoSub },
@@ -38,10 +34,14 @@ export class UsersService {
         email: data.email,
         givenName: data.givenName,
         familyName: data.familyName,
-        displayName: data.displayName ?? `${data.givenName ?? ''} ${data.familyName ?? ''}`.trim(),
+        displayName:
+          data.displayName ??
+          `${data.givenName ?? ''} ${data.familyName ?? ''}`.trim(),
         avatarUrl: data.avatarUrl,
         cognitoUsername: data.cognitoUsername,
-        authProvider: data.cognitoUsername?.includes('Google') ? 'google' : 'cognito',
+        authProvider: data.cognitoUsername?.includes('Google')
+          ? 'google'
+          : 'cognito',
       });
     }
 
@@ -64,9 +64,6 @@ export class UsersService {
     return this.usersRepo.save(user);
   }
 
-  /**
-   * Salva o condomínio e/ou o perfil (role) do usuário durante o onboarding.
-   */
   async updateOnboarding(
     userId: string,
     dto: UpdateOnboardingDto,

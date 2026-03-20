@@ -55,14 +55,17 @@ export class MuralEventsConsumer implements OnModuleInit {
    * Payload esperado:
    *   { serviceId, serviceName, providerName, condominiumId, category, price }
    */
-  private async onServiceCreated(payload: Record<string, unknown>): Promise<void> {
-    const { serviceName, providerName, condominiumId, category, price } = payload as {
-      serviceName: string;
-      providerName: string;
-      condominiumId: string;
-      category: string;
-      price: string;
-    };
+  private async onServiceCreated(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const { serviceName, providerName, condominiumId, category, price } =
+      payload as {
+        serviceName: string;
+        providerName: string;
+        condominiumId: string;
+        category: string;
+        price: string;
+      };
 
     this.logger.log(
       `[service.created] "${serviceName}" publicado por "${providerName}" ` +
@@ -92,7 +95,9 @@ export class MuralEventsConsumer implements OnModuleInit {
    *   { appointmentId, serviceId, serviceName, customerId, customerName,
    *     providerEmail, providerName, scheduledDate, scheduledDay }
    */
-  private async onAppointmentRequested(payload: Record<string, unknown>): Promise<void> {
+  private async onAppointmentRequested(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
     const {
       serviceName,
       customerName,
@@ -133,16 +138,24 @@ export class MuralEventsConsumer implements OnModuleInit {
    * Payload esperado:
    *   { appointmentId, status, serviceName, customerEmail, customerName, providerName }
    */
-  private async onAppointmentStatusChanged(payload: Record<string, unknown>): Promise<void> {
-    const { appointmentId, status, serviceName, customerEmail, customerName, providerName } =
-      payload as {
-        appointmentId: string;
-        status: string;
-        serviceName: string;
-        customerEmail: string;
-        customerName: string;
-        providerName: string;
-      };
+  private async onAppointmentStatusChanged(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const {
+      appointmentId,
+      status,
+      serviceName,
+      customerEmail,
+      customerName,
+      providerName,
+    } = payload as {
+      appointmentId: string;
+      status: string;
+      serviceName: string;
+      customerEmail: string;
+      customerName: string;
+      providerName: string;
+    };
 
     this.logger.log(
       `[appointment.status_changed] Agendamento ${appointmentId} → "${status}".`,
@@ -184,14 +197,17 @@ export class MuralEventsConsumer implements OnModuleInit {
    *   { reviewId, serviceId, serviceName, authorName, providerEmail,
    *     providerName, rating, comment }
    */
-  private async onReviewSubmitted(payload: Record<string, unknown>): Promise<void> {
-    const { serviceName, authorName, providerEmail, providerName, rating } = payload as {
-      serviceName: string;
-      authorName: string;
-      providerEmail: string;
-      providerName: string;
-      rating: number;
-    };
+  private async onReviewSubmitted(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const { serviceName, authorName, providerEmail, providerName, rating } =
+      payload as {
+        serviceName: string;
+        authorName: string;
+        providerEmail: string;
+        providerName: string;
+        rating: number;
+      };
 
     this.logger.log(
       `[review.submitted] "${authorName}" avaliou "${serviceName}" com nota ${rating}.`,

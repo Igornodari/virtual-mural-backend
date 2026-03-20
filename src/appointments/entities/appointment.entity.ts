@@ -13,6 +13,8 @@ import { Service } from '../../services/entities/service.entity';
 export type AppointmentStatus =
   | 'pending'
   | 'confirmed'
+  | 'awaiting_payment'
+  | 'paid'
   | 'cancelled'
   | 'completed';
 
@@ -32,7 +34,14 @@ export class Appointment {
 
   @Column({
     type: 'enum',
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+    enum: [
+      'pending',
+      'confirmed',
+      'awaiting_payment',
+      'paid',
+      'cancelled',
+      'completed',
+    ],
     default: 'pending',
   })
   status: AppointmentStatus;
