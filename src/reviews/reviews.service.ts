@@ -30,14 +30,6 @@ export class ReviewsService {
   ) {}
 
   async create(dto: CreateReviewDto, author: User): Promise<Review> {
-    // Garante que o usuário não avaliou o mesmo serviço mais de uma vez
-    const existing = await this.reviewsRepo.findOne({
-      where: { serviceId: dto.serviceId, authorId: author.id },
-    });
-    if (existing) {
-      throw new ConflictException('Você já avaliou este serviço.');
-    }
-
     const review = this.reviewsRepo.create({
       ...dto,
       authorId: author.id,
@@ -45,11 +37,9 @@ export class ReviewsService {
 
     const saved = await this.reviewsRepo.save(review);
 
-    // Recalcula o rating do serviço e carrega dados do prestador para o evento
     await this.servicesService.recalcRating(dto.serviceId);
     const service = await this.servicesService.findOne(dto.serviceId);
 
-    // Publica evento no RabbitMQ com dados completos para o SES
     await this.messagingService.publish(MuralEvents.REVIEW_SUBMITTED, {
       reviewId: saved.id,
       serviceId: saved.serviceId,
@@ -57,7 +47,8 @@ export class ReviewsService {
       authorId: author.id,
       authorName: author.displayName ?? author.email,
       providerEmail: service?.provider?.email ?? '',
-      providerName: service?.provider?.displayName ?? service?.provider?.email ?? '',
+      providerName:
+        service?.provider?.displayName ?? service?.provider?.email ?? '',
       rating: saved.rating,
     });
 

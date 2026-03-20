@@ -6,7 +6,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -15,6 +14,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
+import { CreateAppointmentPaymentDto } from './dto/create-appointment-payment.dto';
 import { User } from '../users/entities/user.entity';
 
 @ApiTags('appointments')
@@ -33,19 +33,35 @@ export class AppointmentsController {
   @Get('mine')
   @ApiOperation({ summary: 'Lista os agendamentos do usuário autenticado' })
   findMine(@CurrentUser() user: User) {
-    return this.appointmentsService.findByCustomer(user.id);
+    return this.appointmentsService.findMine(user);
   }
 
   @Get('service/:serviceId')
-  @ApiOperation({ summary: 'Lista agendamentos de um serviço (para o prestador)' })
-  findByService(@Param('serviceId', ParseUUIDPipe) serviceId: string) {
-    return this.appointmentsService.findByService(serviceId);
+  @ApiOperation({
+    summary:
+      'Lista agendamentos de um serviço (para o prestador ou disponibilidade)',
+  })
+  findByService(
+    @Param('serviceId', ParseUUIDPipe) serviceId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.appointmentsService.findByService(serviceId, user);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Retorna um agendamento pelo ID' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.appointmentsService.findOne(id);
+  }
+
+  @Post(':id/payment')
+  @ApiOperation({ summary: 'Inicia fluxo de pagamento do agendamento' })
+  pay(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateAppointmentPaymentDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.appointmentsService.payAppointment(id, dto, user);
   }
 
   @Patch(':id/status')

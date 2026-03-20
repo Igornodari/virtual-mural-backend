@@ -1,14 +1,28 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
+
+  // para garantir debug em modo de desenvolvimento
+  if (process.env.NODE_ENV !== 'production') {
+    app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
+  }
 
   // ── Prefixo global da API ────────────────────────────────────────────────────────
   app.setGlobalPrefix('api/v1');
+
+  // ── Stripe webhook raw body ───────────────────────────────────────────────────────
+  app.use(
+    '/api/v1/webhooks/stripe',
+    bodyParser.raw({ type: 'application/json' }),
+  );
 
   // ── CORS ────────────────────────────────────────────────────────────────────────
   app.enableCors({

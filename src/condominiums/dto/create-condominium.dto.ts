@@ -17,7 +17,9 @@ export class CreateCondominiumDto {
 
   @ApiProperty({ example: '01310100' })
   @IsString()
-  @Matches(/^\d{8}$/, { message: 'CEP deve conter exatamente 8 dígitos numéricos.' })
+  @Matches(/^\d{8}$/, {
+    message: 'CEP deve conter exatamente 8 dígitos numéricos.',
+  })
   addressZipCode: string;
 
   @ApiProperty({ example: 'Avenida Paulista' })

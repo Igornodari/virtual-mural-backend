@@ -37,7 +37,9 @@ export class ServicesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lista serviços do condomínio ou do prestador autenticado' })
+  @ApiOperation({
+    summary: 'Lista serviços do condomínio ou do prestador autenticado',
+  })
   @ApiQuery({ name: 'condominiumId', required: false })
   @ApiQuery({ name: 'mine', required: false, type: Boolean })
   findAll(
@@ -51,14 +53,22 @@ export class ServicesController {
   }
 
   @Get('analytics/me')
-  @ApiOperation({ summary: 'Retorna analytics de todos os serviços do prestador autenticado' })
+  @ApiOperation({
+    summary: 'Retorna analytics de todos os serviços do prestador autenticado',
+  })
   getProviderAnalytics(@CurrentUser() user: User) {
     return this.servicesService.getProviderAnalytics(user.id);
   }
 
   @Get(':id/analytics')
-  @ApiOperation({ summary: 'Retorna analytics de um serviço específico (apenas o prestador dono)' })
-  getAnalytics(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+  @ApiOperation({
+    summary:
+      'Retorna analytics de um serviço específico (apenas o prestador dono)',
+  })
+  getAnalytics(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
     return this.servicesService.getAnalytics(id, user.id);
   }
 
@@ -79,21 +89,25 @@ export class ServicesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Remove um serviço (soft delete, apenas o prestador dono)' })
+  @ApiOperation({
+    summary: 'Remove um serviço (soft delete, apenas o prestador dono)',
+  })
   remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.servicesService.remove(id, user.id);
   }
 
   @Patch(':id/track/:metric')
   @ApiOperation({
-    summary: 'Registra métrica de engajamento (aberto a qualquer usuário autenticado)',
+    summary:
+      'Registra métrica de engajamento (aberto a qualquer usuário autenticado)',
     description:
       'Chamado automaticamente pelo frontend quando o cliente interage com o serviço. ' +
       'Não requer ser o dono do serviço. Métricas: clicks, interests, completions, abandonments.',
   })
   trackMetric(
     @Param('id') id: string,
-    @Param('metric') metric: 'clicks' | 'interests' | 'completions' | 'abandonments',
+    @Param('metric')
+    metric: 'clicks' | 'interests' | 'completions' | 'abandonments',
   ) {
     return this.servicesService.trackMetric(id, metric);
   }

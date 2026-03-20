@@ -1,17 +1,29 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Appointment } from './entities/appointment.entity';
+import { Appointment, AppointmentStatus } from './entities/appointment.entity';
+import { Payment } from './entities/payment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
+import { CreateAppointmentPaymentDto } from './dto/create-appointment-payment.dto';
 import { User } from '../users/entities/user.entity';
 import { Service } from '../services/entities/service.entity';
 import { MessagingService } from '../messaging/messaging.service';
 import { MuralEvents } from '../messaging/events/mural.events';
+import { Inject } from '@nestjs/common';
+import type { IPaymentGateway } from './payment/payment-gateway.interface';
+
+const CUSTOMER_ONLY_STATUSES: AppointmentStatus[] = [
+  'confirmed',
+  'awaiting_payment',
+  'paid',
+  'completed',
+];
 
 @Injectable()
 export class AppointmentsService {
@@ -20,35 +32,90 @@ export class AppointmentsService {
     private readonly appointmentsRepo: Repository<Appointment>,
     @InjectRepository(Service)
     private readonly servicesRepo: Repository<Service>,
+    @InjectRepository(Payment)
+    private readonly paymentsRepo: Repository<Payment>,
     private readonly messagingService: MessagingService,
+    @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: IPaymentGateway,
   ) {}
+
+  private normalizeDay(day: string): string {
+    return day.trim().toLowerCase();
+  }
 
   async create(
     dto: CreateAppointmentDto,
     customer: User,
   ): Promise<Appointment> {
+    if (customer.roleInCondominium !== 'customer') {
+      throw new ForbiddenException(
+        'Apenas customers podem solicitar agendamentos.',
+      );
+    }
+
+    const service = await this.servicesRepo.findOne({
+      where: { id: dto.serviceId },
+    });
+    if (!service) {
+      throw new NotFoundException(`Serviço ${dto.serviceId} não encontrado.`);
+    }
+
+    if (!service.isActive) {
+      throw new BadRequestException('Serviço inativo não pode ser agendado.');
+    }
+
+    const normalizedDay = this.normalizeDay(dto.scheduledDay);
+    const availableNormalized = service.availableDays.map((day) =>
+      this.normalizeDay(day),
+    );
+    if (!availableNormalized.includes(normalizedDay)) {
+      throw new BadRequestException(
+        'Dia solicitado não está disponível para este serviço.',
+      );
+    }
+
+    const conflictingAppointment = await this.appointmentsRepo
+      .createQueryBuilder('appointment')
+      .setLock('pessimistic_read')
+      .where('appointment.serviceId = :serviceId', { serviceId: dto.serviceId })
+      .andWhere('appointment.scheduledDate = :scheduledDate', {
+        scheduledDate: dto.scheduledDate,
+      })
+      .andWhere('appointment.status IN (:...busyStatuses)', {
+        busyStatuses: CUSTOMER_ONLY_STATUSES,
+      })
+      .getOne();
+
+    if (conflictingAppointment) {
+      throw new BadRequestException(
+        'Já existe agendamento confirmado/pago/concluído para este dia e serviço.',
+      );
+    }
+
     const appointment = this.appointmentsRepo.create({
       ...dto,
       customerId: customer.id,
+      status: 'pending',
     });
 
     const saved = await this.appointmentsRepo.save(appointment);
 
-    // Carrega o serviço com o prestador para enriquecer o evento RabbitMQ
-    const service = await this.servicesRepo.findOne({
+    // Envia evento de novo pedido (solicitação)
+    const serviceWithProvider = await this.servicesRepo.findOne({
       where: { id: dto.serviceId },
       relations: ['provider'],
     });
 
-    // Notifica o prestador via RabbitMQ com todos os dados necessários para o SES
     await this.messagingService.publish(MuralEvents.APPOINTMENT_REQUESTED, {
       appointmentId: saved.id,
       serviceId: saved.serviceId,
-      serviceName: service?.name ?? '',
+      serviceName: serviceWithProvider?.name || '',
       customerId: customer.id,
       customerName: customer.displayName ?? customer.email,
-      providerEmail: service?.provider?.email ?? '',
-      providerName: service?.provider?.displayName ?? service?.provider?.email ?? '',
+      providerEmail: serviceWithProvider?.provider?.email ?? '',
+      providerName:
+        serviceWithProvider?.provider?.displayName ??
+        serviceWithProvider?.provider?.email ??
+        '',
       scheduledDate: saved.scheduledDate,
       scheduledDay: saved.scheduledDay,
     });
@@ -64,12 +131,87 @@ export class AppointmentsService {
     });
   }
 
-  async findByService(serviceId: string): Promise<Appointment[]> {
+  async findByProvider(providerId: string): Promise<Appointment[]> {
+    return this.appointmentsRepo
+      .createQueryBuilder('appointment')
+      .leftJoinAndSelect('appointment.service', 'service')
+      .leftJoinAndSelect('service.provider', 'provider')
+      .leftJoinAndSelect('appointment.customer', 'customer')
+      .where('service.providerId = :providerId', { providerId })
+      .orderBy('appointment.scheduledDate', 'DESC')
+      .getMany();
+  }
+
+  async findByServiceRaw(serviceId: string): Promise<Appointment[]> {
     return this.appointmentsRepo.find({
       where: { serviceId },
       relations: ['customer'],
       order: { scheduledDate: 'ASC' },
     });
+  }
+
+  async findByService(
+    serviceId: string,
+    requester: User,
+  ): Promise<Appointment[] | { serviceId: string; blockedDates: string[] }> {
+    const service = await this.servicesRepo.findOne({
+      where: { id: serviceId },
+      relations: ['provider'],
+    });
+
+    if (!service) {
+      throw new NotFoundException(`Serviço ${serviceId} não encontrado.`);
+    }
+
+    if (service.providerId === requester.id) {
+      return this.findByServiceRaw(serviceId);
+    }
+
+    if (requester.roleInCondominium === 'customer') {
+      const blockedDates = await this.findServiceBlockedDays(serviceId);
+      return { serviceId, blockedDates };
+    }
+
+    throw new ForbiddenException(
+      'Apenas cliente ou provider podem acessar este recurso.',
+    );
+  }
+
+  private async assertNoServiceDayConflict(
+    serviceId: string,
+    scheduledDate: string | Date,
+    exceptAppointmentId?: string,
+  ) {
+    const conflicting = await this.appointmentsRepo
+      .createQueryBuilder('appointment')
+      .where('appointment.serviceId = :serviceId', { serviceId })
+      .andWhere('appointment.scheduledDate = :scheduledDate', { scheduledDate })
+      .andWhere('appointment.status IN (:...busyStatuses)', {
+        busyStatuses: ['confirmed', 'awaiting_payment', 'paid', 'completed'],
+      })
+      .andWhere(exceptAppointmentId ? 'appointment.id != :id' : '1=1', {
+        id: exceptAppointmentId,
+      })
+      .getOne();
+
+    if (conflicting) {
+      throw new BadRequestException(
+        'Conflito de agenda: já existe agendamento ativo para esta data e serviço.',
+      );
+    }
+  }
+
+  async findServiceBlockedDays(serviceId: string): Promise<string[]> {
+    const statuses = ['confirmed', 'awaiting_payment', 'paid', 'completed'];
+    const rows = await this.appointmentsRepo
+      .createQueryBuilder('appointment')
+      .select('appointment.scheduledDate', 'scheduledDate')
+      .where('appointment.serviceId = :serviceId', { serviceId })
+      .andWhere('appointment.status IN (:...statuses)', { statuses })
+      .groupBy('appointment.scheduledDate')
+      .getRawMany<{ scheduledDate: string }>();
+
+    return rows.map((r) => r.scheduledDate);
   }
 
   async findOne(id: string): Promise<Appointment> {
@@ -89,29 +231,255 @@ export class AppointmentsService {
     requesterId: string,
   ): Promise<Appointment> {
     const appointment = await this.findOne(id);
-
-    const isCustomer = appointment.customerId === requesterId;
     const isProvider = appointment.service?.provider?.id === requesterId;
 
-    if (!isCustomer && !isProvider) {
+    if (!isProvider) {
       throw new ForbiddenException(
-        'Apenas o cliente ou o prestador podem alterar o status deste agendamento.',
+        'Apenas o provider pode alterar o status desta operação.',
       );
     }
 
-    appointment.status = dto.status;
+    const currentStatus = appointment.status;
+    const nextStatus = dto.status;
+
+    const validTransitions: Record<AppointmentStatus, AppointmentStatus[]> = {
+      pending: ['confirmed', 'cancelled'],
+      confirmed: ['cancelled'],
+      awaiting_payment: [],
+      paid: ['completed'],
+      cancelled: [],
+      completed: [],
+    };
+
+    if (!validTransitions[currentStatus].includes(nextStatus)) {
+      throw new BadRequestException(
+        `Transição de status inválida: ${currentStatus} para ${nextStatus}.`,
+      );
+    }
+
+    if (nextStatus === 'confirmed') {
+      await this.assertNoServiceDayConflict(
+        appointment.serviceId,
+        appointment.scheduledDate,
+        appointment.id,
+      );
+    }
+
+    appointment.status = nextStatus;
     const saved = await this.appointmentsRepo.save(appointment);
 
-    // Notifica o morador sobre a mudança de status via RabbitMQ
-    await this.messagingService.publish(MuralEvents.APPOINTMENT_STATUS_CHANGED, {
-      appointmentId: saved.id,
-      status: saved.status,
-      serviceName: appointment.service?.name ?? '',
-      customerEmail: appointment.customer?.email ?? '',
-      customerName: appointment.customer?.displayName ?? appointment.customer?.email ?? '',
-      providerName: appointment.service?.provider?.displayName ?? '',
-    });
+    await this.messagingService.publish(
+      MuralEvents.APPOINTMENT_STATUS_CHANGED,
+      {
+        appointmentId: saved.id,
+        status: saved.status,
+        serviceName: appointment.service?.name ?? '',
+        customerEmail: appointment.customer?.email ?? '',
+        customerName:
+          appointment.customer?.displayName ??
+          appointment.customer?.email ??
+          '',
+        providerName: appointment.service?.provider?.displayName ?? '',
+      },
+    );
 
     return saved;
+  }
+
+  async payAppointment(
+    id: string,
+    dto: CreateAppointmentPaymentDto,
+    customer: User,
+  ): Promise<{
+    paymentId: string;
+    paymentStatus: 'pending' | 'processing' | 'paid' | 'failed';
+    checkoutUrl?: string;
+    qrCode?: string;
+    qrCodeText?: string;
+    appointment: Appointment;
+  }> {
+    const appointment = await this.findOne(id);
+
+    if (appointment.customerId !== customer.id) {
+      throw new ForbiddenException(
+        'Apenas o cliente dono do agendamento pode pagar.',
+      );
+    }
+
+    if (!['confirmed', 'awaiting_payment'].includes(appointment.status)) {
+      throw new BadRequestException(
+        'Agendamento deve estar confirmado ou aguardando pagamento.',
+      );
+    }
+
+    return this.appointmentsRepo.manager.transaction(async (manager) => {
+      const appointmentLocked = await manager
+        .getRepository(Appointment)
+        .findOne({
+          where: { id },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+      if (!appointmentLocked) {
+        throw new NotFoundException(`Agendamento ${id} não encontrado.`);
+      }
+
+      if (appointmentLocked.customerId !== customer.id) {
+        throw new ForbiddenException(
+          'Apenas o cliente dono do agendamento pode pagar.',
+        );
+      }
+
+      const service = await manager.getRepository(Service).findOne({
+        where: { id: appointmentLocked.serviceId },
+      });
+
+      if (!service) {
+        throw new NotFoundException(
+          `Serviço ${appointmentLocked.serviceId} não encontrado.`,
+        );
+      }
+
+      appointmentLocked.service = service;
+
+      const existing = await manager.getRepository(Payment).findOne({
+        where: {
+          appointmentId: id,
+          method: dto.method,
+        },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (existing && existing.status !== 'failed') {
+        return {
+          paymentId: existing.externalPaymentId,
+          paymentStatus: existing.status,
+          checkoutUrl: existing.checkoutUrl,
+          qrCode: existing.qrCode,
+          qrCodeText: existing.qrCodeText,
+          appointment: appointmentLocked,
+        };
+      }
+
+      appointmentLocked.status = 'awaiting_payment';
+      await manager.getRepository(Appointment).save(appointmentLocked);
+
+      const paymentResult = await this.paymentGateway.createPayment(
+        appointmentLocked,
+        dto.method,
+      );
+
+      const paymentEntity = manager.getRepository(Payment).create({
+        appointmentId: id,
+        method: dto.method,
+        status: paymentResult.paymentStatus,
+        externalPaymentId: paymentResult.paymentId,
+        checkoutUrl: paymentResult.checkoutUrl,
+        qrCode: paymentResult.qrCode,
+        qrCodeText: paymentResult.qrCodeText,
+      });
+
+      await manager.getRepository(Payment).save(paymentEntity);
+
+      if (paymentResult.paymentStatus === 'paid') {
+        appointmentLocked.status = 'paid';
+      } else if (
+        ['pending', 'processing'].includes(paymentResult.paymentStatus)
+      ) {
+        appointmentLocked.status = 'awaiting_payment';
+      } else {
+        appointmentLocked.status = 'awaiting_payment';
+      }
+
+      const savedAppointment = await manager
+        .getRepository(Appointment)
+        .save(appointmentLocked);
+
+      await this.messagingService.publish(
+        MuralEvents.APPOINTMENT_STATUS_CHANGED,
+        {
+          appointmentId: savedAppointment.id,
+          status: savedAppointment.status,
+          serviceName: savedAppointment.service?.name ?? '',
+          customerEmail: savedAppointment.customer?.email ?? '',
+          customerName:
+            savedAppointment.customer?.displayName ??
+            savedAppointment.customer?.email ??
+            '',
+          providerName: savedAppointment.service?.provider?.displayName ?? '',
+        },
+      );
+
+      return {
+        paymentId: paymentResult.paymentId,
+        paymentStatus: paymentResult.paymentStatus,
+        checkoutUrl: paymentResult.checkoutUrl,
+        qrCode: paymentResult.qrCode,
+        qrCodeText: paymentResult.qrCodeText,
+        appointment: savedAppointment,
+      };
+    });
+  }
+
+  async handleStripePaymentSucceeded(externalPaymentId: string): Promise<void> {
+    const payment = await this.paymentsRepo.findOne({
+      where: { externalPaymentId },
+      relations: ['appointment'],
+    });
+
+    if (!payment) {
+      return;
+    }
+
+    payment.status = 'paid';
+    await this.paymentsRepo.save(payment);
+
+    const appointment = await this.findOne(payment.appointmentId);
+    if (appointment.status !== 'paid') {
+      appointment.status = 'paid';
+      await this.appointmentsRepo.save(appointment);
+
+      await this.messagingService.publish(
+        MuralEvents.APPOINTMENT_STATUS_CHANGED,
+        {
+          appointmentId: appointment.id,
+          status: appointment.status,
+          serviceName: appointment.service?.name ?? '',
+          customerEmail: appointment.customer?.email ?? '',
+          customerName:
+            appointment.customer?.displayName ??
+            appointment.customer?.email ??
+            '',
+          providerName: appointment.service?.provider?.displayName ?? '',
+        },
+      );
+    }
+  }
+
+  async handleStripePaymentFailed(externalPaymentId: string): Promise<void> {
+    const payment = await this.paymentsRepo.findOne({
+      where: { externalPaymentId },
+    });
+
+    if (!payment) {
+      return;
+    }
+
+    payment.status = 'failed';
+    await this.paymentsRepo.save(payment);
+  }
+
+  async findMine(
+    user: User,
+  ): Promise<Appointment[] | { blockedDates: string[] }> {
+    if (user.roleInCondominium === 'provider') {
+      return this.findByProvider(user.id);
+    }
+
+    if (user.roleInCondominium === 'customer') {
+      return this.findByCustomer(user.id);
+    }
+
+    throw new ForbiddenException('Utilizador sem role válido.');
   }
 }

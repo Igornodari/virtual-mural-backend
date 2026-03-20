@@ -129,7 +129,10 @@ export class ServicesService {
    * Retorna analytics de um serviço específico.
    * Apenas o prestador responsável pode acessar.
    */
-  async getAnalytics(id: string, requesterId: string): Promise<ServiceAnalytics> {
+  async getAnalytics(
+    id: string,
+    requesterId: string,
+  ): Promise<ServiceAnalytics> {
     const service = await this.servicesRepo.findOne({
       where: { id },
       relations: ['reviews'],
@@ -141,14 +144,24 @@ export class ServicesService {
       );
     }
     const reviews = service.reviews ?? [];
-    const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const ratingDistribution: Record<number, number> = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
     reviews.forEach((r) => {
       ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
     });
     const recentComments = reviews
       .filter((r) => r.comment)
       .slice(0, 10)
-      .map((r) => ({ rating: r.rating, comment: r.comment ?? '', createdAt: r.createdAt }));
+      .map((r) => ({
+        rating: r.rating,
+        comment: r.comment ?? '',
+        createdAt: r.createdAt,
+      }));
     return {
       serviceId: service.id,
       serviceName: service.name,
@@ -173,14 +186,24 @@ export class ServicesService {
     });
     return services.map((service) => {
       const reviews = service.reviews ?? [];
-      const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      const ratingDistribution: Record<number, number> = {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+      };
       reviews.forEach((r) => {
         ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
       });
       const recentComments = reviews
         .filter((r) => r.comment)
         .slice(0, 5)
-        .map((r) => ({ rating: r.rating, comment: r.comment ?? '', createdAt: r.createdAt }));
+        .map((r) => ({
+          rating: r.rating,
+          comment: r.comment ?? '',
+          createdAt: r.createdAt,
+        }));
       return {
         serviceId: service.id,
         serviceName: service.name,
@@ -210,9 +233,7 @@ export class ServicesService {
     const reviews = service.reviews ?? [];
     const total = reviews.length;
     const avg =
-      total > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / total
-        : 0;
+      total > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / total : 0;
 
     service.rating = Math.round(avg * 100) / 100;
     service.totalReviews = total;
