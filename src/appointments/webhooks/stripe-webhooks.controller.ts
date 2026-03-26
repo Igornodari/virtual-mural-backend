@@ -1,11 +1,10 @@
-import { Controller, HttpCode, Post, Res, Req } from '@nestjs/common';
+import { Controller, HttpCode, Post, Res, Req, Logger } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import Stripe from 'stripe';
 import { AppointmentsService } from '../appointments.service';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from '@nestjs/common';
 
-@Controller('webhooks')
+@Controller('api/stripe')
 export class StripeWebhooksController {
   private readonly stripe: Stripe;
   private readonly logger = new Logger(StripeWebhooksController.name);
@@ -22,7 +21,7 @@ export class StripeWebhooksController {
     this.stripe = new Stripe(secretKey);
   }
 
-  @Post('stripe')
+  @Post('webhook')
   @HttpCode(200)
   async handleStripeWebhook(@Req() req: Request, @Res() res: Response) {
     const sig = req.headers['stripe-signature'];

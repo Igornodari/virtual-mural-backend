@@ -38,7 +38,7 @@ export class AppointmentsService {
     private readonly paymentsRepo: Repository<Payment>,
     private readonly messagingService: MessagingService,
     @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: IPaymentGateway,
-  ) {}
+  ) { }
 
   private normalizeDay(day: string): string {
     return day.trim().toLowerCase();
@@ -54,75 +54,79 @@ export class AppointmentsService {
       );
     }
 
-    const service = await this.servicesRepo.findOne({
-      where: { id: dto.serviceId },
-    });
-    if (!service) {
-      throw new NotFoundException(`Serviço ${dto.serviceId} não encontrado.`);
-    }
+    return this.appointmentsRepo.manager.transaction(async (manager) => {
+      const service = await manager.getRepository(Service).findOne({
+        where: { id: dto.serviceId },
+      });
 
-    if (!service.isActive) {
-      throw new BadRequestException('Serviço inativo não pode ser agendado.');
-    }
+      if (!service) {
+        throw new NotFoundException(`Serviço ${dto.serviceId} não encontrado.`);
+      }
 
-    const normalizedDay = this.normalizeDay(dto.scheduledDay);
-    const availableNormalized = service.availableDays.map((day) =>
-      this.normalizeDay(day),
-    );
-    if (!availableNormalized.includes(normalizedDay)) {
-      throw new BadRequestException(
-        'Dia solicitado não está disponível para este serviço.',
+      if (!service.isActive) {
+        throw new BadRequestException('Serviço inativo não pode ser agendado.');
+      }
+
+      const normalizedDay = this.normalizeDay(dto.scheduledDay);
+      const availableNormalized = service.availableDays.map((day) =>
+        this.normalizeDay(day),
       );
-    }
 
-    const conflictingAppointment = await this.appointmentsRepo
-      .createQueryBuilder('appointment')
-      .setLock('pessimistic_read')
-      .where('appointment.serviceId = :serviceId', { serviceId: dto.serviceId })
-      .andWhere('appointment.scheduledDate = :scheduledDate', {
-        scheduledDate: dto.scheduledDate,
-      })
-      .andWhere('appointment.status IN (:...busyStatuses)', {
-        busyStatuses: CUSTOMER_ONLY_STATUSES,
-      })
-      .getOne();
+      if (!availableNormalized.includes(normalizedDay)) {
+        throw new BadRequestException(
+          'Dia solicitado não está disponível para este serviço.',
+        );
+      }
 
-    if (conflictingAppointment) {
-      throw new BadRequestException(
-        'Já existe agendamento confirmado/pago/concluído para este dia e serviço.',
-      );
-    }
+      const conflictingAppointment = await manager
+        .getRepository(Appointment)
+        .createQueryBuilder('appointment')
+        .setLock('pessimistic_write')
+        .where('appointment.serviceId = :serviceId', { serviceId: dto.serviceId })
+        .andWhere('appointment.scheduledDate = :scheduledDate', {
+          scheduledDate: dto.scheduledDate,
+        })
+        .andWhere('appointment.status IN (:...busyStatuses)', {
+          busyStatuses: CUSTOMER_ONLY_STATUSES,
+        })
+        .getOne();
 
-    const appointment = this.appointmentsRepo.create({
-      ...dto,
-      customerId: customer.id,
-      status: 'pending',
+      if (conflictingAppointment) {
+        throw new BadRequestException(
+          'Já existe agendamento confirmado/pago/concluído para este dia e serviço.',
+        );
+      }
+
+      const appointment = manager.getRepository(Appointment).create({
+        ...dto,
+        customerId: customer.id,
+        status: 'pending',
+      });
+
+      const saved = await manager.getRepository(Appointment).save(appointment);
+
+      const serviceWithProvider = await manager.getRepository(Service).findOne({
+        where: { id: dto.serviceId },
+        relations: ['provider'],
+      });
+
+      await this.messagingService.publish(MuralEvents.APPOINTMENT_REQUESTED, {
+        appointmentId: saved.id,
+        serviceId: saved.serviceId,
+        serviceName: serviceWithProvider?.name || '',
+        customerId: customer.id,
+        customerName: customer.displayName ?? customer.email,
+        providerEmail: serviceWithProvider?.provider?.email ?? '',
+        providerName:
+          serviceWithProvider?.provider?.displayName ??
+          serviceWithProvider?.provider?.email ??
+          '',
+        scheduledDate: saved.scheduledDate,
+        scheduledDay: saved.scheduledDay,
+      });
+
+      return saved;
     });
-
-    const saved = await this.appointmentsRepo.save(appointment);
-
-    // Envia evento de novo pedido (solicitação)
-    const serviceWithProvider = await this.servicesRepo.findOne({
-      where: { id: dto.serviceId },
-      relations: ['provider'],
-    });
-
-    await this.messagingService.publish(MuralEvents.APPOINTMENT_REQUESTED, {
-      appointmentId: saved.id,
-      serviceId: saved.serviceId,
-      serviceName: serviceWithProvider?.name || '',
-      customerId: customer.id,
-      customerName: customer.displayName ?? customer.email,
-      providerEmail: serviceWithProvider?.provider?.email ?? '',
-      providerName:
-        serviceWithProvider?.provider?.displayName ??
-        serviceWithProvider?.provider?.email ??
-        '',
-      scheduledDate: saved.scheduledDate,
-      scheduledDay: saved.scheduledDay,
-    });
-
-    return saved;
   }
 
   async findByCustomer(customerId: string): Promise<Appointment[]> {
