@@ -137,6 +137,78 @@ export class AppointmentsService {
     });
   }
 
+  async handleStripeCheckoutSessionCompleted(params: {
+    appointmentId: string;
+    sessionId: string;
+  }): Promise<void> {
+    await this.appointmentsRepo.manager.transaction(async (manager) => {
+      const appointment = await manager.getRepository(Appointment).findOne({
+        where: { id: params.appointmentId },
+      });
+
+      if (!appointment) {
+        this.logger.warn(
+          `[handleStripeCheckoutSessionCompleted] Appointment ${params.appointmentId} não encontrado`,
+        );
+        return;
+      }
+
+      const payment = await manager.getRepository(Payment).findOne({
+        where: { appointmentId: params.appointmentId },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (!payment) {
+        this.logger.warn(
+          `[handleStripeCheckoutSessionCompleted] Payment do appointment ${params.appointmentId} não encontrado`,
+        );
+        return;
+      }
+
+      payment.status = 'paid';
+      payment.externalPaymentId = params.sessionId;
+      await manager.getRepository(Payment).save(payment);
+
+      appointment.status = 'paid';
+      await manager.getRepository(Appointment).save(appointment);
+
+      this.logger.log(
+        `[handleStripeCheckoutSessionCompleted] appointment=${appointment.id} marcado como paid`,
+      );
+    });
+  }
+
+  async handleStripeCheckoutSessionExpired(params: {
+  appointmentId: string;
+  sessionId: string;
+}): Promise<void> {
+  await this.appointmentsRepo.manager.transaction(async (manager) => {
+    const payment = await manager.getRepository(Payment).findOne({
+      where: { appointmentId: params.appointmentId },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (payment && payment.status !== 'paid') {
+      payment.status = 'failed';
+      payment.externalPaymentId = params.sessionId;
+      await manager.getRepository(Payment).save(payment);
+    }
+
+    const appointment = await manager.getRepository(Appointment).findOne({
+      where: { id: params.appointmentId },
+    });
+
+    if (appointment && appointment.status === 'awaiting_payment') {
+      appointment.status = 'confirmed';
+      await manager.getRepository(Appointment).save(appointment);
+    }
+
+    this.logger.log(
+      `[handleStripeCheckoutSessionExpired] appointment=${params.appointmentId} sessão expirada`,
+    );
+  });
+}
+
   async findByProvider(providerId: string): Promise<Appointment[]> {
     return this.appointmentsRepo
       .createQueryBuilder('appointment')

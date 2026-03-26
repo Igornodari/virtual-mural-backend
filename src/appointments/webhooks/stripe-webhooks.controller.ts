@@ -66,15 +66,27 @@ export class StripeWebhooksController {
       }
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        const paymentIntentId =
-          typeof session.payment_intent === 'string'
-            ? session.payment_intent
-            : session.payment_intent?.id;
+        const appointmentId = session.metadata?.appointmentId;
+        const sessionId = session.id;
 
-        if (paymentIntentId) {
-          await this.appointmentsService.handleStripePaymentSucceeded(
-            paymentIntentId,
-          );
+        if (session.payment_status === 'paid' && appointmentId) {
+          await this.appointmentsService.handleStripeCheckoutSessionCompleted({
+            appointmentId,
+            sessionId,
+          });
+        }
+
+        break;
+      }
+      case 'checkout.session.expired': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const appointmentId = session.metadata?.appointmentId;
+
+        if (appointmentId) {
+          await this.appointmentsService.handleStripeCheckoutSessionExpired({
+            appointmentId,
+            sessionId: session.id,
+          });
         }
 
         break;
