@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, RequestMethod } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
@@ -10,21 +10,24 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
-  // para garantir debug em modo de desenvolvimento
   if (process.env.NODE_ENV !== 'production') {
     app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
   }
 
-  // ── Prefixo global da API ────────────────────────────────────────────────────────
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: [
+      {
+        path: 'api/stripe/webhook',
+        method: RequestMethod.POST,
+      },
+    ],
+  });
 
-  // ── Stripe webhook raw body ───────────────────────────────────────────────────────
   app.use(
-    '/api/v1/webhooks/stripe',
+    '/api/stripe/webhook',
     bodyParser.raw({ type: 'application/json' }),
   );
 
-  // ── CORS ────────────────────────────────────────────────────────────────────────
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -32,7 +35,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // ── Validação global ──────────────────────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -42,7 +44,6 @@ async function bootstrap() {
     }),
   );
 
-  // ── Swagger ───────────────────────────────────────────────────────────────────────
   const config = new DocumentBuilder()
     .setTitle('Virtual Mural API')
     .setDescription(
