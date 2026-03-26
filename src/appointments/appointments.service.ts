@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -27,6 +28,7 @@ const CUSTOMER_ONLY_STATUSES: AppointmentStatus[] = [
 
 @Injectable()
 export class AppointmentsService {
+  private readonly logger = new Logger(AppointmentsService.name);
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentsRepo: Repository<Appointment>,
@@ -351,15 +353,38 @@ export class AppointmentsService {
         order: { createdAt: 'DESC' },
       });
 
+      this.logger.log(
+        `[payAppointment] appointmentId=${id} method=${dto.method} ` +
+        `existing=${existing ? `id=${existing.id} status=${existing.status} checkoutUrl=${existing.checkoutUrl}` : 'null'}`,
+      );
+
       if (existing && existing.status !== 'failed') {
-        return {
-          paymentId: existing.externalPaymentId,
-          paymentStatus: existing.status,
-          checkoutUrl: existing.checkoutUrl,
-          qrCode: existing.qrCode,
-          qrCodeText: existing.qrCodeText,
-          appointment: appointmentLocked,
-        };
+        // Verifica se a checkoutUrl existente é válida (deve ser cs_... para credit_card)
+        const isStaleUrl =
+          dto.method === 'credit_card' &&
+          existing.checkoutUrl &&
+          !existing.checkoutUrl.includes('/pay/cs_');
+
+        if (isStaleUrl) {
+          this.logger.warn(
+            `[payAppointment] checkoutUrl obsoleta detectada para payment ${existing.id}: ` +
+            `"${existing.checkoutUrl}" — marcando como failed e criando nova sessão`,
+          );
+          existing.status = 'failed';
+          await manager.getRepository(Payment).save(existing);
+        } else {
+          this.logger.log(
+            `[payAppointment] Reutilizando pagamento existente ${existing.id} com checkoutUrl=${existing.checkoutUrl}`,
+          );
+          return {
+            paymentId: existing.externalPaymentId,
+            paymentStatus: existing.status,
+            checkoutUrl: existing.checkoutUrl,
+            qrCode: existing.qrCode,
+            qrCodeText: existing.qrCodeText,
+            appointment: appointmentLocked,
+          };
+        }
       }
 
       appointmentLocked.status = 'awaiting_payment';
@@ -368,6 +393,11 @@ export class AppointmentsService {
       const paymentResult = await this.paymentGateway.createPayment(
         appointmentLocked,
         dto.method,
+      );
+
+      this.logger.log(
+        `[payAppointment] Nova sessão criada: paymentId=${paymentResult.paymentId} ` +
+        `checkoutUrl=${paymentResult.checkoutUrl} checkoutSessionId=${paymentResult.checkoutSessionId}`,
       );
 
       const paymentEntity = manager.getRepository(Payment).create({
