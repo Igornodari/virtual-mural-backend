@@ -24,18 +24,18 @@ export class CreateAppointmentDto {
     example: 'Terca',
     description: 'Dia da semana escolhido',
     enum: [
-      'Segunda',
-      'Terca',
-      'Quarta',
-      'Quinta',
-      'Sexta',
-      'Sabado',
+      'Segunda-feira',
+      'Terça-feira',
+      'Quarta-feira',
+      'Quinta-feira',
+      'Sexta-feira',
+      'Sábado',
       'Domingo',
     ],
   })
   @IsString()
   @IsNotEmpty()
-  @IsIn(['Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado', 'Domingo'])
+  @IsIn(['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'])
   scheduledDay: string;
 
   @ApiPropertyOptional({ example: 'Preciso trocar o sifão da pia da cozinha.' })

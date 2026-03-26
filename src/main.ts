@@ -6,7 +6,9 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
   const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
@@ -23,10 +25,9 @@ async function bootstrap() {
     ],
   });
 
-  app.use(
-    '/api/stripe/webhook',
-    bodyParser.raw({ type: 'application/json' }),
-  );
+  app.use('/api/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
@@ -68,7 +69,5 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   logger.log(`🚀 Servidor rodando em http://localhost:${port}/api/v1`);
-  logger.log(`📚 Swagger disponível em http://localhost:${port}/api/docs`);
 }
-
 bootstrap();
