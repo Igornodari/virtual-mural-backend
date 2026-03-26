@@ -63,6 +63,7 @@ export class StripePaymentGatewayService implements IPaymentGateway {
             }
 
             const session = await this.stripe.checkout.sessions.create({
+                ui_mode: 'hosted',
                 payment_method_types: ['card'],
                 mode: 'payment',
                 line_items: [
@@ -114,6 +115,7 @@ export class StripePaymentGatewayService implements IPaymentGateway {
                 paymentId,
                 paymentStatus: 'processing',
                 checkoutUrl,
+                checkoutSessionId: session.id,
             };
         } catch (error) {
             this.logger.error(

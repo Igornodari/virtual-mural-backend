@@ -294,6 +294,7 @@ export class AppointmentsService {
     paymentId: string;
     paymentStatus: 'pending' | 'processing' | 'paid' | 'failed';
     checkoutUrl?: string;
+    checkoutSessionId?: string;
     qrCode?: string;
     qrCodeText?: string;
     appointment: Appointment;
@@ -414,6 +415,7 @@ export class AppointmentsService {
         paymentId: paymentResult.paymentId,
         paymentStatus: paymentResult.paymentStatus,
         checkoutUrl: paymentResult.checkoutUrl,
+        checkoutSessionId: paymentResult.checkoutSessionId,
         qrCode: paymentResult.qrCode,
         qrCodeText: paymentResult.qrCodeText,
         appointment: savedAppointment,
