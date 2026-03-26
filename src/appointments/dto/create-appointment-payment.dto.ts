@@ -15,6 +15,7 @@ export interface AppointmentPaymentResult {
   paymentId: string;
   paymentStatus: PaymentStatus;
   checkoutUrl?: string;
+  checkoutSessionId?: string;
   qrCode?: string;
   qrCodeText?: string;
 }
