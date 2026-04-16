@@ -35,7 +35,15 @@ export class CreateAppointmentDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsIn(['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'])
+  @IsIn([
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+    'Domingo',
+  ])
   scheduledDay: string;
 
   @ApiPropertyOptional({ example: 'Preciso trocar o sifão da pia da cozinha.' })
