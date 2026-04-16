@@ -51,21 +51,21 @@ export class StripeWebhooksController {
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const paymentIntent = event.data.object;
         await this.appointmentsService.handleStripePaymentSucceeded(
           paymentIntent.id,
         );
         break;
       }
       case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const paymentIntent = event.data.object;
         await this.appointmentsService.handleStripePaymentFailed(
           paymentIntent.id,
         );
         break;
       }
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         const appointmentId = session.metadata?.appointmentId;
         const sessionId = session.id;
 
@@ -79,7 +79,7 @@ export class StripeWebhooksController {
         break;
       }
       case 'checkout.session.expired': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         const appointmentId = session.metadata?.appointmentId;
 
         if (appointmentId) {

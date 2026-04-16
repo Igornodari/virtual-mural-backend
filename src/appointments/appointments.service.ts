@@ -38,7 +38,7 @@ export class AppointmentsService {
     private readonly paymentsRepo: Repository<Payment>,
     private readonly messagingService: MessagingService,
     @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: IPaymentGateway,
-  ) { }
+  ) {}
 
   private normalizeDay(day: string): string {
     return day.trim().toLowerCase();
@@ -82,7 +82,9 @@ export class AppointmentsService {
         .getRepository(Appointment)
         .createQueryBuilder('appointment')
         .setLock('pessimistic_write')
-        .where('appointment.serviceId = :serviceId', { serviceId: dto.serviceId })
+        .where('appointment.serviceId = :serviceId', {
+          serviceId: dto.serviceId,
+        })
         .andWhere('appointment.scheduledDate = :scheduledDate', {
           scheduledDate: dto.scheduledDate,
         })
@@ -179,35 +181,35 @@ export class AppointmentsService {
   }
 
   async handleStripeCheckoutSessionExpired(params: {
-  appointmentId: string;
-  sessionId: string;
-}): Promise<void> {
-  await this.appointmentsRepo.manager.transaction(async (manager) => {
-    const payment = await manager.getRepository(Payment).findOne({
-      where: { appointmentId: params.appointmentId },
-      order: { createdAt: 'DESC' },
+    appointmentId: string;
+    sessionId: string;
+  }): Promise<void> {
+    await this.appointmentsRepo.manager.transaction(async (manager) => {
+      const payment = await manager.getRepository(Payment).findOne({
+        where: { appointmentId: params.appointmentId },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (payment && payment.status !== 'paid') {
+        payment.status = 'failed';
+        payment.externalPaymentId = params.sessionId;
+        await manager.getRepository(Payment).save(payment);
+      }
+
+      const appointment = await manager.getRepository(Appointment).findOne({
+        where: { id: params.appointmentId },
+      });
+
+      if (appointment && appointment.status === 'awaiting_payment') {
+        appointment.status = 'confirmed';
+        await manager.getRepository(Appointment).save(appointment);
+      }
+
+      this.logger.log(
+        `[handleStripeCheckoutSessionExpired] appointment=${params.appointmentId} sessão expirada`,
+      );
     });
-
-    if (payment && payment.status !== 'paid') {
-      payment.status = 'failed';
-      payment.externalPaymentId = params.sessionId;
-      await manager.getRepository(Payment).save(payment);
-    }
-
-    const appointment = await manager.getRepository(Appointment).findOne({
-      where: { id: params.appointmentId },
-    });
-
-    if (appointment && appointment.status === 'awaiting_payment') {
-      appointment.status = 'confirmed';
-      await manager.getRepository(Appointment).save(appointment);
-    }
-
-    this.logger.log(
-      `[handleStripeCheckoutSessionExpired] appointment=${params.appointmentId} sessão expirada`,
-    );
-  });
-}
+  }
 
   async findByProvider(providerId: string): Promise<Appointment[]> {
     return this.appointmentsRepo
@@ -431,7 +433,7 @@ export class AppointmentsService {
 
       this.logger.log(
         `[payAppointment] appointmentId=${id} method=${dto.method} ` +
-        `existing=${existing ? `id=${existing.id} status=${existing.status} checkoutUrl=${existing.checkoutUrl}` : 'null'}`,
+          `existing=${existing ? `id=${existing.id} status=${existing.status} checkoutUrl=${existing.checkoutUrl}` : 'null'}`,
       );
 
       if (existing && existing.status !== 'failed') {
@@ -444,7 +446,7 @@ export class AppointmentsService {
         if (isStaleUrl) {
           this.logger.warn(
             `[payAppointment] checkoutUrl obsoleta detectada para payment ${existing.id}: ` +
-            `"${existing.checkoutUrl}" — marcando como failed e criando nova sessão`,
+              `"${existing.checkoutUrl}" — marcando como failed e criando nova sessão`,
           );
           existing.status = 'failed';
           await manager.getRepository(Payment).save(existing);
@@ -473,7 +475,7 @@ export class AppointmentsService {
 
       this.logger.log(
         `[payAppointment] Nova sessão criada: paymentId=${paymentResult.paymentId} ` +
-        `checkoutUrl=${paymentResult.checkoutUrl} checkoutSessionId=${paymentResult.checkoutSessionId}`,
+          `checkoutUrl=${paymentResult.checkoutUrl} checkoutSessionId=${paymentResult.checkoutSessionId}`,
       );
 
       const paymentEntity = manager.getRepository(Payment).create({

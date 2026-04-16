@@ -38,7 +38,15 @@ export class CreateServiceDto {
   category: string;
 
   @ApiProperty({
-    example: ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'],
+    example: [
+      'Segunda-feira',
+      'Terça-feira',
+      'Quarta-feira',
+      'Quinta-feira',
+      'Sexta-feira',
+      'Sábado',
+      'Domingo',
+    ],
     description: 'Dias da semana disponíveis para agendamento',
   })
   @IsArray()

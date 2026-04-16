@@ -9,8 +9,7 @@ import { AppointmentsController } from './appointments.controller';
 import { StripePaymentGatewayService } from './payment/stripe-payment-gateway.service';
 import { MockPaymentGatewayService } from './payment/mock-payment-gateway.service';
 import { StripeWebhooksController } from './webhooks/stripe-webhooks.controller';
-import { MessagingModule } from 'src/messaging/messaging.module';
-
+import { MessagingModule } from '../messaging/messaging.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Appointment, Payment, Service]),
