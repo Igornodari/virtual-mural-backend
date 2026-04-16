@@ -70,4 +70,4 @@ async function bootstrap() {
   await app.listen(port);
   logger.log(`🚀 Servidor rodando em http://localhost:${port}/api/v1`);
 }
-bootstrap();
+void bootstrap();

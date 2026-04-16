@@ -22,7 +22,7 @@ export class MuralEventsConsumer implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.messagingService.consume(async (event, payload) => {
+    await this.messagingService.consume(async (event: MuralEvents, payload) => {
       switch (event) {
         case MuralEvents.SERVICE_CREATED:
           await this.onServiceCreated(payload);

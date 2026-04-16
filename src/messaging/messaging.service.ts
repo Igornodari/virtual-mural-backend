@@ -44,7 +44,7 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
 
       // Registra listeners para erros de conexão
       this.connection.on('error', (err) => {
-        this.logger.error('Erro na conexão RabbitMQ:', err.message);
+        this.logger.error('Erro na conexão RabbitMQ:', (err as Error).message);
       });
       this.connection.on('close', () => {
         this.logger.warn(
