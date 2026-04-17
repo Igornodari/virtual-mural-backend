@@ -42,19 +42,6 @@ export class Service {
   @Column({ default: 0 })
   totalReviews: number;
 
-  // ── Métricas de engajamento (registradas pelo cliente) ─────────────────────
-  @Column({ default: 0 })
-  clicks: number;
-
-  @Column({ default: 0 })
-  interests: number;
-
-  @Column({ default: 0 })
-  completions: number;
-
-  @Column({ default: 0 })
-  abandonments: number;
-
   @Column({ default: true })
   isActive: boolean;
 
