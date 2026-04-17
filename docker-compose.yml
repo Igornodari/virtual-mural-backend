@@ -1,61 +1,92 @@
+version: '3.9'
+
 services:
-  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  # ── PostgreSQL Database ────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: virtual_mural_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: virtual_mural
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-virtual_mural}
     ports:
-      - '5432:5432'
+      - '${DB_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${DB_USER:-postgres}
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
-  # ── RabbitMQ ───────────────────────────────────────────────────────────────
+  # ── RabbitMQ Message Broker ────────────────────────────────────────────────
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: virtual_mural_rabbitmq
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     ports:
-      - '5672:5672'    # AMQP
-      - '15672:15672'  # Management UI → http://localhost:15672
+      - '${RABBITMQ_PORT:-5672}:5672'    # AMQP protocol
+      - '${RABBITMQ_MGMT_PORT:-15672}:15672'  # Management UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - ping
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
-  # ── API NestJS ─────────────────────────────────────────────────────────────
+  # ── NestJS API Application ────────────────────────────────────────────────
   api:
     build:
       context: .
       dockerfile: Dockerfile
+      cache_from:
+        - type=registry,ref=${IMAGE_NAME:-virtual_mural_api}:latest
+    image: ${IMAGE_NAME:-virtual_mural_api}:${IMAGE_TAG:-latest}
     container_name: virtual_mural_api
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
       DB_HOST: postgres
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-virtual_mural}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
     ports:
-      - '3000:3000'
+      - '${APP_PORT:-3000}:3000'
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    networks:
+      - backend
+    # Graceful shutdown
+    stop_grace_period: 15s
+    stop_signal: SIGTERM
 
 volumes:
   postgres_data:
+    driver: local
   rabbitmq_data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge

@@ -62,7 +62,10 @@ export class NotificationsService {
       return;
     }
 
-    const messageAttributes: Record<string, { DataType: string; StringValue: string }> = {};
+    const messageAttributes: Record<
+      string,
+      { DataType: string; StringValue: string }
+    > = {};
     if (payload.attributes) {
       for (const [key, value] of Object.entries(payload.attributes)) {
         messageAttributes[key] = { DataType: 'String', StringValue: value };

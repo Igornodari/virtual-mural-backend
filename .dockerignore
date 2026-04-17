@@ -1,0 +1,60 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+dist
+build
+.next
+out
+
+# Test files and coverage
+coverage
+.nyc_output
+test
+**/*.spec.ts
+**/*.test.ts
+
+# Environment files (exclude .env at build time)
+.env.local
+.env.*.local
+
+# IDE and editor
+.vscode
+.idea
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+Jenkins*
+
+# Documentation
+README.md
+CONTRIBUTING.md
+docs
+*.md
+
+# Misc
+.prettierrc
+.eslintrc*
+jest.config.js

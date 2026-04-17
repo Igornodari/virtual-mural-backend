@@ -17,7 +17,10 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private readonly url: string;
 
   constructor(private readonly config: ConfigService) {
-    this.url = config.get<string>('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672');
+    this.url = config.get<string>(
+      'RABBITMQ_URL',
+      'amqp://guest:guest@localhost:5672',
+    );
     this.queue = config.get<string>('RABBITMQ_QUEUE', 'virtual_mural_queue');
   }
 
@@ -41,10 +44,12 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
 
       // Registra listeners para erros de conexão
       this.connection.on('error', (err) => {
-        this.logger.error('Erro na conexão RabbitMQ:', err.message);
+        this.logger.error('Erro na conexão RabbitMQ:', (err as Error).message);
       });
       this.connection.on('close', () => {
-        this.logger.warn('Conexão RabbitMQ encerrada. Tentando reconectar em 5s...');
+        this.logger.warn(
+          'Conexão RabbitMQ encerrada. Tentando reconectar em 5s...',
+        );
         setTimeout(() => this.connect(), 5000);
       });
     } catch (err) {
@@ -71,9 +76,14 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
    * @param event - Nome do evento (ex: 'service.created')
    * @param payload - Objeto com os dados do evento
    */
-  async publish(event: string, payload: Record<string, unknown>): Promise<void> {
+  async publish(
+    event: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
     if (!this.channel) {
-      this.logger.warn(`Canal RabbitMQ indisponível. Evento "${event}" descartado.`);
+      this.logger.warn(
+        `Canal RabbitMQ indisponível. Evento "${event}" descartado.`,
+      );
       return;
     }
 
@@ -82,7 +92,7 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
     );
 
     this.channel.sendToQueue(this.queue, message, {
-      persistent: true,          // Mensagem sobrevive a reinicializações do broker
+      persistent: true, // Mensagem sobrevive a reinicializações do broker
       contentType: 'application/json',
       headers: { 'x-event-type': event },
     });
@@ -100,7 +110,9 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
     handler: (event: string, payload: Record<string, unknown>) => Promise<void>,
   ): Promise<void> {
     if (!this.channel) {
-      this.logger.warn('Canal RabbitMQ indisponível. Consumidor não registrado.');
+      this.logger.warn(
+        'Canal RabbitMQ indisponível. Consumidor não registrado.',
+      );
       return;
     }
 
@@ -120,7 +132,10 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
         await handler(event, payload);
         this.channel?.ack(msg);
       } catch (err) {
-        this.logger.error('Erro ao processar mensagem:', (err as Error).message);
+        this.logger.error(
+          'Erro ao processar mensagem:',
+          (err as Error).message,
+        );
         // Rejeita e descarta a mensagem (não re-enfileira para evitar loop)
         this.channel?.nack(msg, false, false);
       }

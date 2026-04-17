@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from './entities/review.entity';
@@ -30,25 +26,15 @@ export class ReviewsService {
   ) {}
 
   async create(dto: CreateReviewDto, author: User): Promise<Review> {
-    // Garante que o usuário não avaliou o mesmo serviço mais de uma vez
-    const existing = await this.reviewsRepo.findOne({
-      where: { serviceId: dto.serviceId, authorId: author.id },
-    });
-    if (existing) {
-      throw new ConflictException('Você já avaliou este serviço.');
-    }
-
     const review = this.reviewsRepo.create({
       ...dto,
       authorId: author.id,
     });
     const saved = await this.reviewsRepo.save(review);
 
-    // Recalcula o rating do serviço e carrega dados do prestador para o evento
     await this.servicesService.recalcRating(dto.serviceId);
     const service = await this.servicesService.findOne(dto.serviceId);
 
-    // Publica evento no RabbitMQ com dados completos para o SES
     await this.messagingService.publish(MuralEvents.REVIEW_SUBMITTED, {
       reviewId: saved.id,
       serviceId: saved.serviceId,
@@ -56,7 +42,8 @@ export class ReviewsService {
       authorId: author.id,
       authorName: author.displayName ?? author.email,
       providerEmail: service?.provider?.email ?? '',
-      providerName: service?.provider?.displayName ?? service?.provider?.email ?? '',
+      providerName:
+        service?.provider?.displayName ?? service?.provider?.email ?? '',
       rating: saved.rating,
     });
 
@@ -73,7 +60,6 @@ export class ReviewsService {
       order: { createdAt: 'DESC' },
       // Não carrega a relação 'author' intencionalmente — anonimização
     });
-
     return reviews.map((r) => ({
       id: r.id,
       rating: r.rating,

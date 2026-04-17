@@ -21,9 +21,7 @@ export interface ServiceAnalytics {
   abandonments: number;
   rating: number;
   totalReviews: number;
-  /** Distribuição de estrelas: { 1: n, 2: n, 3: n, 4: n, 5: n } */
   ratingDistribution: Record<number, number>;
-  /** Últimos comentários anônimos */
   recentComments: Array<{ rating: number; comment: string; createdAt: Date }>;
 }
 
@@ -112,6 +110,115 @@ export class ServicesService {
   }
 
   /**
+   * Incrementa um contador de métrica de engajamento.
+   * Pode ser chamado por qualquer usuário autenticado (cliente ou prestador).
+   * O registro é feito automaticamente pelo uso do cliente — sem restrição de owner.
+   */
+  async trackMetric(
+    id: string,
+    metric: 'clicks' | 'interests' | 'completions' | 'abandonments',
+  ): Promise<void> {
+    const service = await this.servicesRepo.findOne({ where: { id } });
+    if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
+    service[metric] = (service[metric] ?? 0) + 1;
+    await this.servicesRepo.save(service);
+  }
+
+  /**
+   * Retorna analytics de um serviço específico.
+   * Apenas o prestador responsável pode acessar.
+   */
+  async getAnalytics(
+    id: string,
+    requesterId: string,
+  ): Promise<ServiceAnalytics> {
+    const service = await this.servicesRepo.findOne({
+      where: { id },
+      relations: ['reviews'],
+    });
+    if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
+    if (service.providerId !== requesterId) {
+      throw new ForbiddenException(
+        'Apenas o prestador responsável pode visualizar os analytics.',
+      );
+    }
+    const reviews = service.reviews ?? [];
+    const ratingDistribution: Record<number, number> = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
+    reviews.forEach((r) => {
+      ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
+    });
+    const recentComments = reviews
+      .filter((r) => r.comment)
+      .slice(0, 10)
+      .map((r) => ({
+        rating: r.rating,
+        comment: r.comment ?? '',
+        createdAt: r.createdAt,
+      }));
+    return {
+      serviceId: service.id,
+      serviceName: service.name,
+      clicks: service.clicks ?? 0,
+      interests: service.interests ?? 0,
+      completions: service.completions ?? 0,
+      abandonments: service.abandonments ?? 0,
+      rating: service.rating ?? 0,
+      totalReviews: service.totalReviews ?? 0,
+      ratingDistribution,
+      recentComments,
+    };
+  }
+
+  /**
+   * Retorna analytics de todos os serviços de um prestador.
+   */
+  async getProviderAnalytics(providerId: string): Promise<ServiceAnalytics[]> {
+    const services = await this.servicesRepo.find({
+      where: { providerId, isActive: true },
+      relations: ['reviews'],
+    });
+    return services.map((service) => {
+      const reviews = service.reviews ?? [];
+      const ratingDistribution: Record<number, number> = {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+      };
+      reviews.forEach((r) => {
+        ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
+      });
+      const recentComments = reviews
+        .filter((r) => r.comment)
+        .slice(0, 5)
+        .map((r) => ({
+          rating: r.rating,
+          comment: r.comment ?? '',
+          createdAt: r.createdAt,
+        }));
+      return {
+        serviceId: service.id,
+        serviceName: service.name,
+        clicks: service.clicks ?? 0,
+        interests: service.interests ?? 0,
+        completions: service.completions ?? 0,
+        abandonments: service.abandonments ?? 0,
+        rating: service.rating ?? 0,
+        totalReviews: service.totalReviews ?? 0,
+        ratingDistribution,
+        recentComments,
+      };
+    });
+  }
+
+  /**
    * Recalcula a média de avaliações do serviço.
    * Chamado pelo ReviewsService após cada nova avaliação.
    */
@@ -125,118 +232,10 @@ export class ServicesService {
     const reviews = service.reviews ?? [];
     const total = reviews.length;
     const avg =
-      total > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / total
-        : 0;
+      total > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / total : 0;
 
     service.rating = Math.round(avg * 100) / 100;
     service.totalReviews = total;
     await this.servicesRepo.save(service);
-  }
-
-  /**
-   * Incrementa um contador de métrica de engajamento.
-   * Chamado pelo controller quando o frontend registra um evento.
-   */
-  async trackMetric(
-    id: string,
-    metric: 'clicks' | 'interests' | 'completions' | 'abandonments',
-    requesterId: string,
-  ): Promise<void> {
-    const service = await this.servicesRepo.findOne({ where: { id } });
-    if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
-    if (service.providerId !== requesterId) {
-      throw new ForbiddenException(
-        'Apenas o prestador responsável pode registrar métricas.',
-      );
-    }
-    service[metric] = (service[metric] ?? 0) + 1;
-    await this.servicesRepo.save(service);
-  }
-
-  /**
-   * Retorna os dados analíticos completos de um serviço.
-   * Comentários são retornados de forma anônima (sem nome do autor).
-   */
-  async getAnalytics(id: string, requesterId: string): Promise<ServiceAnalytics> {
-    const service = await this.servicesRepo.findOne({
-      where: { id },
-      relations: ['reviews'],
-    });
-    if (!service) throw new NotFoundException(`Serviço ${id} não encontrado.`);
-    if (service.providerId !== requesterId) {
-      throw new ForbiddenException(
-        'Apenas o prestador responsável pode visualizar os analytics.',
-      );
-    }
-
-    const reviews = service.reviews ?? [];
-
-    // Distribuição de estrelas
-    const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    for (const r of reviews) {
-      ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
-    }
-
-    // Últimos 10 comentários anônimos (sem authorId, sem nome)
-    const recentComments = reviews
-      .filter((r) => r.comment && r.comment.trim().length > 0)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 10)
-      .map((r) => ({
-        rating: r.rating,
-        comment: r.comment,
-        createdAt: r.createdAt,
-      }));
-
-    return {
-      serviceId: service.id,
-      serviceName: service.name,
-      clicks: service.clicks ?? 0,
-      interests: service.interests ?? 0,
-      completions: service.completions ?? 0,
-      abandonments: service.abandonments ?? 0,
-      rating: Number(service.rating),
-      totalReviews: service.totalReviews,
-      ratingDistribution,
-      recentComments,
-    };
-  }
-
-  /**
-   * Retorna analytics de todos os serviços de um prestador.
-   */
-  async getProviderAnalytics(providerId: string): Promise<ServiceAnalytics[]> {
-    const services = await this.servicesRepo.find({
-      where: { providerId, isActive: true },
-      relations: ['reviews'],
-      order: { createdAt: 'DESC' },
-    });
-
-    return services.map((service) => {
-      const reviews = service.reviews ?? [];
-      const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      for (const r of reviews) {
-        ratingDistribution[r.rating] = (ratingDistribution[r.rating] ?? 0) + 1;
-      }
-      const recentComments = reviews
-        .filter((r) => r.comment && r.comment.trim().length > 0)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 10)
-        .map((r) => ({ rating: r.rating, comment: r.comment, createdAt: r.createdAt }));
-
-      return {
-        serviceId: service.id,
-        serviceName: service.name,
-        clicks: service.clicks ?? 0,
-        interests: service.interests ?? 0,
-        completions: service.completions ?? 0,
-        abandonments: service.abandonments ?? 0,
-        rating: Number(service.rating),
-        totalReviews: service.totalReviews,
-        ratingDistribution,
-        recentComments,
-      };
-    });
   }
 }
