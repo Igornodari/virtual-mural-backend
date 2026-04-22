@@ -53,7 +53,9 @@ export class CreateAppointmentDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'scheduledTime deve estar no formato HH:mm' })
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
+    message: 'scheduledTime deve estar no formato HH:mm',
+  })
   scheduledTime?: string;
 
   @ApiPropertyOptional({ example: 'Preciso trocar o sifão da pia da cozinha.' })

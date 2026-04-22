@@ -54,9 +54,7 @@ export class WhatsAppService {
 
     if (!this.enabled || !this.client) {
       // Modo dev: apenas exibe no log
-      this.logger.debug(
-        `[WhatsApp SIMULADO] Para: ${phone}\n${body}`,
-      );
+      this.logger.debug(`[WhatsApp SIMULADO] Para: ${phone}\n${body}`);
       return;
     }
 
@@ -195,7 +193,10 @@ export class WhatsAppService {
     label: string;
     hint: string;
   } | null {
-    const map: Record<string, { emoji: string; title: string; label: string; hint: string }> = {
+    const map: Record<
+      string,
+      { emoji: string; title: string; label: string; hint: string }
+    > = {
       confirmed: {
         emoji: '✅',
         title: 'Agendamento confirmado!',

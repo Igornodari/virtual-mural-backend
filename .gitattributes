@@ -1,0 +1,18 @@
+# Normaliza line endings para LF no repositório, permitindo CRLF no worktree Windows.
+# Sem isso, cada save em editor Windows gera diff gigante de line endings.
+* text=auto eol=lf
+
+# Arquivos binários — não tocar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Scripts de shell — sempre LF (nunca CRLF, mesmo em Windows)
+*.sh text eol=lf

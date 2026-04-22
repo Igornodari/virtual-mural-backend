@@ -95,7 +95,7 @@ export class StripeWebhooksController {
       }
       // ── Stripe Connect: status da conta do prestador ──────────────────────
       case 'account.updated': {
-        const account = event.data.object as Stripe.Account;
+        const account = event.data.object;
         await this.stripeConnectService.handleAccountUpdated(account.id);
         break;
       }

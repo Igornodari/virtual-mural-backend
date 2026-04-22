@@ -27,9 +27,8 @@ export class StripeConnectService {
     if (!secretKey) throw new Error('STRIPE_SECRET_KEY is required');
 
     this.stripe = new Stripe(secretKey, { apiVersion: '2026-02-25.clover' });
-    this.platformFeeRate = parseFloat(
-      this.config.get<string>('PLATFORM_FEE_PERCENT', '5'),
-    ) / 100;
+    this.platformFeeRate =
+      parseFloat(this.config.get<string>('PLATFORM_FEE_PERCENT', '5')) / 100;
   }
 
   /**
@@ -75,7 +74,9 @@ export class StripeConnectService {
   /**
    * Gera um link de onboarding (account link) para o prestador completar o cadastro no Stripe.
    */
-  async createOnboardingLink(providerId: string): Promise<{ onboardingUrl: string }> {
+  async createOnboardingLink(
+    providerId: string,
+  ): Promise<{ onboardingUrl: string }> {
     const provider = await this.findProvider(providerId);
 
     if (!provider.stripeAccountId) {
@@ -108,7 +109,9 @@ export class StripeConnectService {
       };
     }
 
-    const account = await this.stripe.accounts.retrieve(provider.stripeAccountId);
+    const account = await this.stripe.accounts.retrieve(
+      provider.stripeAccountId,
+    );
 
     return {
       accountId: provider.stripeAccountId,
@@ -125,7 +128,9 @@ export class StripeConnectService {
     const provider = await this.findProvider(providerId);
 
     if (!provider.stripeAccountId) {
-      throw new BadRequestException('Conta Stripe não encontrada para este prestador.');
+      throw new BadRequestException(
+        'Conta Stripe não encontrada para este prestador.',
+      );
     }
 
     const loginLink = await this.stripe.accounts.createLoginLink(
@@ -145,21 +150,25 @@ export class StripeConnectService {
     });
 
     if (!provider) {
-      this.logger.warn(`Nenhum provider encontrado para conta Stripe ${stripeAccountId}`);
+      this.logger.warn(
+        `Nenhum provider encontrado para conta Stripe ${stripeAccountId}`,
+      );
       return;
     }
 
     const isActive = account.charges_enabled && account.payouts_enabled;
     const isRestricted = !isActive && account.requirements?.disabled_reason;
 
-    const newStatus = isActive ? 'active' : isRestricted ? 'restricted' : 'pending';
+    const newStatus = isActive
+      ? 'active'
+      : isRestricted
+        ? 'restricted'
+        : 'pending';
 
     provider.stripeAccountStatus = newStatus;
     await this.usersRepo.save(provider);
 
-    this.logger.log(
-      `Conta Stripe ${stripeAccountId} → status: ${newStatus}`,
-    );
+    this.logger.log(`Conta Stripe ${stripeAccountId} → status: ${newStatus}`);
   }
 
   /**

@@ -339,6 +339,19 @@ export class AppointmentsService {
     return appointment;
   }
 
+  /** Versão segura do findOne: verifica se o requester é o cliente ou o prestador */
+  async findOneForUser(id: string, requesterId: string): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+    const isCustomer = appointment.customerId === requesterId;
+    const isProvider = appointment.service?.provider?.id === requesterId;
+
+    if (!isCustomer && !isProvider) {
+      throw new ForbiddenException('Acesso negado a este agendamento.');
+    }
+
+    return appointment;
+  }
+
   async updateStatus(
     id: string,
     dto: UpdateAppointmentStatusDto,
@@ -669,10 +682,13 @@ export class AppointmentsService {
 
     // Consulta Stripe para confirmar pagamento
     if (!this.stripe) {
-      throw new BadRequestException('Gateway de pagamento Stripe não configurado.');
+      throw new BadRequestException(
+        'Gateway de pagamento Stripe não configurado.',
+      );
     }
 
-    const session = await this.stripe.checkout.sessions.retrieve(checkoutSessionId);
+    const session =
+      await this.stripe.checkout.sessions.retrieve(checkoutSessionId);
 
     if (session.payment_status === 'paid') {
       await this.handleStripeCheckoutSessionCompleted({

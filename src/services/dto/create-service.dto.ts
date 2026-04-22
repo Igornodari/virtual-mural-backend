@@ -41,7 +41,8 @@ export class CreateServiceDto {
 
   @ApiPropertyOptional({
     example: ['Segunda-feira', 'Terça-feira'],
-    description: 'Dias da semana disponíveis (preenchido automaticamente a partir de availabilitySlots quando fornecido)',
+    description:
+      'Dias da semana disponíveis (preenchido automaticamente a partir de availabilitySlots quando fornecido)',
   })
   @IsOptional()
   @IsArray()
@@ -49,7 +50,8 @@ export class CreateServiceDto {
   availableDays?: string[];
 
   @ApiPropertyOptional({
-    description: 'Disponibilidade por dia com horários (substitui availableDays quando fornecido)',
+    description:
+      'Disponibilidade por dia com horários (substitui availableDays quando fornecido)',
     type: [AvailabilitySlotDto],
   })
   @IsOptional()

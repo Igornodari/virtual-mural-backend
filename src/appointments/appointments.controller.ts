@@ -49,9 +49,12 @@ export class AppointmentsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Retorna um agendamento pelo ID' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.appointmentsService.findOne(id);
+  @ApiOperation({
+    summary:
+      'Retorna um agendamento pelo ID (apenas dono ou prestador do serviço)',
+  })
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.appointmentsService.findOneForUser(id, user.id);
   }
 
   @Post(':id/payment')

@@ -48,14 +48,17 @@ export class MuralEventsConsumer implements OnModuleInit {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  private async onServiceCreated(payload: Record<string, unknown>): Promise<void> {
-    const { serviceName, providerName, condominiumId, category, price } = payload as {
-      serviceName: string;
-      providerName: string;
-      condominiumId: string;
-      category: string;
-      price: string;
-    };
+  private async onServiceCreated(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const { serviceName, providerName, condominiumId, category, price } =
+      payload as {
+        serviceName: string;
+        providerName: string;
+        condominiumId: string;
+        category: string;
+        price: string;
+      };
 
     this.logger.log(
       `[service.created] "${serviceName}" publicado por "${providerName}" no condomínio ${condominiumId}.`,
@@ -81,11 +84,13 @@ export class MuralEventsConsumer implements OnModuleInit {
    * → E-mail para o prestador
    * → WhatsApp para o prestador
    */
-  private async onAppointmentRequested(payload: Record<string, unknown>): Promise<void> {
+  private async onAppointmentRequested(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
     const {
       serviceName,
       customerName,
-      customerPhone,
+      customerPhone: _customerPhone,
       providerEmail,
       providerName,
       providerPhone,
@@ -141,7 +146,9 @@ export class MuralEventsConsumer implements OnModuleInit {
    *
    * Statuses tratados: confirmed, cancelled, completed, awaiting_payment, paid
    */
-  private async onAppointmentStatusChanged(payload: Record<string, unknown>): Promise<void> {
+  private async onAppointmentStatusChanged(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
     const {
       appointmentId,
       status,
@@ -231,14 +238,17 @@ export class MuralEventsConsumer implements OnModuleInit {
    * Nova avaliação enviada pelo cliente.
    * → E-mail para o prestador
    */
-  private async onReviewSubmitted(payload: Record<string, unknown>): Promise<void> {
-    const { serviceName, authorName, providerEmail, providerName, rating } = payload as {
-      serviceName: string;
-      authorName: string;
-      providerEmail: string;
-      providerName: string;
-      rating: number;
-    };
+  private async onReviewSubmitted(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const { serviceName, authorName, providerEmail, providerName, rating } =
+      payload as {
+        serviceName: string;
+        authorName: string;
+        providerEmail: string;
+        providerName: string;
+        rating: number;
+      };
 
     this.logger.log(
       `[review.submitted] "${authorName}" avaliou "${serviceName}" com nota ${rating}.`,

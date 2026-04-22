@@ -62,10 +62,11 @@ export class StripePaymentGatewayService implements IPaymentGateway {
 
         if (hasConnectAccount) {
           pixParams.application_fee_amount = applicationFeeAmount;
-          pixParams.transfer_data = { destination: providerStripeAccountId! };
+          pixParams.transfer_data = { destination: providerStripeAccountId };
         }
 
-        const paymentIntent = await this.stripe.paymentIntents.create(pixParams);
+        const paymentIntent =
+          await this.stripe.paymentIntents.create(pixParams);
 
         this.logger.log(
           `Criado PaymentIntent PIX ${paymentIntent.id} para appointment ${appointment.id}` +
@@ -76,7 +77,8 @@ export class StripePaymentGatewayService implements IPaymentGateway {
           paymentId: paymentIntent.id,
           paymentStatus: 'pending',
           qrCode: paymentIntent.next_action?.pix_display_qr_code?.data || '',
-          qrCodeText: paymentIntent.next_action?.pix_display_qr_code?.data || '',
+          qrCodeText:
+            paymentIntent.next_action?.pix_display_qr_code?.data || '',
         };
       }
 
@@ -95,7 +97,8 @@ export class StripePaymentGatewayService implements IPaymentGateway {
               currency,
               product_data: {
                 name: appointment.service?.name || 'Serviço Virtual Mural',
-                description: appointment.service?.description || 'Pagamento de serviço',
+                description:
+                  appointment.service?.description || 'Pagamento de serviço',
               },
               unit_amount: amount,
             },
@@ -113,7 +116,7 @@ export class StripePaymentGatewayService implements IPaymentGateway {
       if (hasConnectAccount) {
         sessionParams.payment_intent_data = {
           application_fee_amount: applicationFeeAmount,
-          transfer_data: { destination: providerStripeAccountId! },
+          transfer_data: { destination: providerStripeAccountId },
           metadata: {
             appointmentId: appointment.id,
             serviceId: appointment.serviceId,
