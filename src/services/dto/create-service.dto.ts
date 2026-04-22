@@ -5,8 +5,10 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  ArrayMinSize,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { AvailabilitySlotDto } from './availability-slot.dto';
 
 export class CreateServiceDto {
   @ApiProperty({ example: 'Encanamento Residencial' })
@@ -37,22 +39,24 @@ export class CreateServiceDto {
   @IsNotEmpty()
   category: string;
 
-  @ApiProperty({
-    example: [
-      'Segunda-feira',
-      'Terça-feira',
-      'Quarta-feira',
-      'Quinta-feira',
-      'Sexta-feira',
-      'Sábado',
-      'Domingo',
-    ],
-    description: 'Dias da semana disponíveis para agendamento',
+  @ApiPropertyOptional({
+    example: ['Segunda-feira', 'Terça-feira'],
+    description: 'Dias da semana disponíveis (preenchido automaticamente a partir de availabilitySlots quando fornecido)',
   })
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @IsString({ each: true })
-  availableDays: string[];
+  availableDays?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Disponibilidade por dia com horários (substitui availableDays quando fornecido)',
+    type: [AvailabilitySlotDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AvailabilitySlotDto)
+  availabilitySlots?: AvailabilitySlotDto[];
 
   @ApiPropertyOptional({
     description:

@@ -41,8 +41,20 @@ export class ServicesService {
       );
     }
 
+    // availableDays é derivado dos slots (prioridade) ou enviado diretamente
+    const availableDays = dto.availabilitySlots?.length
+      ? dto.availabilitySlots.map((s) => s.day)
+      : (dto.availableDays ?? []);
+
+    if (!availableDays.length) {
+      throw new ForbiddenException(
+        'Configure ao menos um dia de disponibilidade (availableDays ou availabilitySlots).',
+      );
+    }
+
     const service = this.servicesRepo.create({
       ...dto,
+      availableDays,
       providerId: provider.id,
       condominiumId,
     });
@@ -93,6 +105,10 @@ export class ServicesService {
       throw new ForbiddenException(
         'Apenas o prestador responsável pode editar este serviço.',
       );
+    }
+    // Se availabilitySlots fornecido no update, sincroniza availableDays
+    if (dto.availabilitySlots?.length) {
+      dto.availableDays = dto.availabilitySlots.map((s) => s.day);
     }
     Object.assign(service, dto);
     return this.servicesRepo.save(service);

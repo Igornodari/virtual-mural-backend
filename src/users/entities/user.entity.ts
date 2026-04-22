@@ -89,7 +89,20 @@ export class User {
   @OneToMany(() => Review, (review) => review.author)
   reviews: Review[];
 
-  @Column({ nullable: true })
+  // ── Stripe Connect ─────────────────────────────────────────────────────────
+  /** ID da conta Stripe Express do prestador (acct_xxx) */
+  @Column({ type: 'varchar', nullable: true })
+  stripeAccountId: string | null;
+
+  /** Status do onboarding Stripe Connect */
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'active', 'restricted'],
+    nullable: true,
+  })
+  stripeAccountStatus: 'pending' | 'active' | 'restricted' | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
   lastLoginAt: Date;
 
   @CreateDateColumn()

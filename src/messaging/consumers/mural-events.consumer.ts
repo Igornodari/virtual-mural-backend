@@ -2,15 +2,14 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { MessagingService } from '../messaging.service';
 import { MuralEvents } from '../events/mural.events';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { WhatsAppService } from '../../notifications/whatsapp.service';
 
 /**
  * Consumidor de eventos do Mural Virtual.
  *
- * Escuta a fila RabbitMQ e aciona notificações reais via AWS SNS e SES
- * para cada evento relevante do sistema.
- *
- * Fluxo:
- *   RabbitMQ queue → MuralEventsConsumer → NotificationsService → SNS / SES
+ * Escuta a fila RabbitMQ e aciona notificações via:
+ *  - AWS SES   → e-mails transacionais
+ *  - Twilio    → WhatsApp para cliente e prestador
  */
 @Injectable()
 export class MuralEventsConsumer implements OnModuleInit {
@@ -19,6 +18,7 @@ export class MuralEventsConsumer implements OnModuleInit {
   constructor(
     private readonly messagingService: MessagingService,
     private readonly notifications: NotificationsService,
+    private readonly whatsApp: WhatsAppService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -48,28 +48,17 @@ export class MuralEventsConsumer implements OnModuleInit {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  /**
-   * Novo serviço publicado no mural.
-   * Notifica todos os moradores do condomínio via SNS.
-   *
-   * Payload esperado:
-   *   { serviceId, serviceName, providerName, condominiumId, category, price }
-   */
-  private async onServiceCreated(
-    payload: Record<string, unknown>,
-  ): Promise<void> {
-    const { serviceName, providerName, condominiumId, category, price } =
-      payload as {
-        serviceName: string;
-        providerName: string;
-        condominiumId: string;
-        category: string;
-        price: string;
-      };
+  private async onServiceCreated(payload: Record<string, unknown>): Promise<void> {
+    const { serviceName, providerName, condominiumId, category, price } = payload as {
+      serviceName: string;
+      providerName: string;
+      condominiumId: string;
+      category: string;
+      price: string;
+    };
 
     this.logger.log(
-      `[service.created] "${serviceName}" publicado por "${providerName}" ` +
-        `no condomínio ${condominiumId}.`,
+      `[service.created] "${serviceName}" publicado por "${providerName}" no condomínio ${condominiumId}.`,
     );
 
     await this.notifications.notifyCondominiumResidents(
@@ -88,37 +77,38 @@ export class MuralEventsConsumer implements OnModuleInit {
   }
 
   /**
-   * Novo agendamento solicitado por um morador.
-   * Notifica o prestador via SES (e-mail direto).
-   *
-   * Payload esperado:
-   *   { appointmentId, serviceId, serviceName, customerId, customerName,
-   *     providerEmail, providerName, scheduledDate, scheduledDay }
+   * Novo agendamento solicitado pelo cliente.
+   * → E-mail para o prestador
+   * → WhatsApp para o prestador
    */
-  private async onAppointmentRequested(
-    payload: Record<string, unknown>,
-  ): Promise<void> {
+  private async onAppointmentRequested(payload: Record<string, unknown>): Promise<void> {
     const {
       serviceName,
       customerName,
+      customerPhone,
       providerEmail,
       providerName,
+      providerPhone,
       scheduledDate,
       scheduledDay,
+      scheduledTime,
     } = payload as {
       serviceName: string;
       customerName: string;
+      customerPhone: string;
       providerEmail: string;
       providerName: string;
+      providerPhone: string;
       scheduledDate: string;
       scheduledDay: string;
+      scheduledTime?: string;
     };
 
     this.logger.log(
-      `[appointment.requested] "${customerName}" agendou "${serviceName}" ` +
-        `para ${scheduledDate} (${scheduledDay}).`,
+      `[appointment.requested] "${customerName}" agendou "${serviceName}" para ${scheduledDate} (${scheduledDay}).`,
     );
 
+    // E-mail para o prestador
     if (providerEmail) {
       await this.notifications.sendAppointmentRequestEmail(
         providerEmail,
@@ -129,46 +119,94 @@ export class MuralEventsConsumer implements OnModuleInit {
         scheduledDate,
       );
     }
+
+    // WhatsApp para o prestador
+    if (providerPhone) {
+      await this.whatsApp.notifyProviderNewAppointment({
+        providerPhone,
+        providerName,
+        customerName,
+        serviceName,
+        scheduledDay,
+        scheduledDate,
+        scheduledTime,
+      });
+    }
   }
 
   /**
-   * Status de um agendamento alterado (confirmado, cancelado, concluído).
-   * Notifica o morador via SES.
+   * Status de agendamento alterado.
+   * → E-mail para o cliente
+   * → WhatsApp para o cliente
    *
-   * Payload esperado:
-   *   { appointmentId, status, serviceName, customerEmail, customerName, providerName }
+   * Statuses tratados: confirmed, cancelled, completed, awaiting_payment, paid
    */
-  private async onAppointmentStatusChanged(
-    payload: Record<string, unknown>,
-  ): Promise<void> {
+  private async onAppointmentStatusChanged(payload: Record<string, unknown>): Promise<void> {
     const {
       appointmentId,
       status,
       serviceName,
       customerEmail,
+      customerPhone,
       customerName,
       providerName,
+      scheduledDate,
+      scheduledDay,
+      scheduledTime,
     } = payload as {
       appointmentId: string;
       status: string;
       serviceName: string;
       customerEmail: string;
+      customerPhone: string;
       customerName: string;
       providerName: string;
+      scheduledDate?: string;
+      scheduledDay?: string;
+      scheduledTime?: string;
     };
 
     this.logger.log(
       `[appointment.status_changed] Agendamento ${appointmentId} → "${status}".`,
     );
 
-    const statusLabels: Record<string, string> = {
-      confirmed: 'confirmado ✅',
-      cancelled: 'cancelado ❌',
-      completed: 'concluído 🎉',
-    };
-    const label = statusLabels[status] ?? status;
+    // ── WhatsApp para o cliente ──────────────────────────────────────────────
+    if (customerPhone) {
+      if (status === 'paid') {
+        // Status 'paid' tem mensagem específica de confirmação de pagamento
+        await this.whatsApp.notifyCustomerPaymentConfirmed({
+          customerPhone,
+          customerName,
+          serviceName,
+          providerName,
+          scheduledDay,
+          scheduledDate,
+          scheduledTime,
+        });
+      } else {
+        await this.whatsApp.notifyCustomerStatusChanged({
+          customerPhone,
+          customerName,
+          serviceName,
+          providerName,
+          status,
+          scheduledDay,
+          scheduledDate,
+          scheduledTime,
+        });
+      }
+    }
 
-    if (customerEmail) {
+    // ── E-mail para o cliente (apenas statuses relevantes) ───────────────────
+    const emailStatuses = ['confirmed', 'cancelled', 'completed'];
+    if (customerEmail && emailStatuses.includes(status)) {
+      const statusLabels: Record<string, string> = {
+        confirmed: 'confirmado ✅',
+        cancelled: 'cancelado ❌',
+        completed: 'concluído 🎉',
+      };
+      const label = statusLabels[status] ?? status;
+
       await this.notifications.sendEmail({
         to: [customerEmail],
         subject: `Seu agendamento foi ${label} — ${serviceName}`,
@@ -190,24 +228,17 @@ export class MuralEventsConsumer implements OnModuleInit {
   }
 
   /**
-   * Nova avaliação enviada por um morador.
-   * Notifica o prestador via SES.
-   *
-   * Payload esperado:
-   *   { reviewId, serviceId, serviceName, authorName, providerEmail,
-   *     providerName, rating, comment }
+   * Nova avaliação enviada pelo cliente.
+   * → E-mail para o prestador
    */
-  private async onReviewSubmitted(
-    payload: Record<string, unknown>,
-  ): Promise<void> {
-    const { serviceName, authorName, providerEmail, providerName, rating } =
-      payload as {
-        serviceName: string;
-        authorName: string;
-        providerEmail: string;
-        providerName: string;
-        rating: number;
-      };
+  private async onReviewSubmitted(payload: Record<string, unknown>): Promise<void> {
+    const { serviceName, authorName, providerEmail, providerName, rating } = payload as {
+      serviceName: string;
+      authorName: string;
+      providerEmail: string;
+      providerName: string;
+      rating: number;
+    };
 
     this.logger.log(
       `[review.submitted] "${authorName}" avaliou "${serviceName}" com nota ${rating}.`,

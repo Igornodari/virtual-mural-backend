@@ -2,6 +2,7 @@ import { Controller, HttpCode, Post, Res, Req, Logger } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import Stripe from 'stripe';
 import { AppointmentsService } from '../appointments.service';
+import { StripeConnectService } from '../../stripe-connect/stripe-connect.service';
 import { ConfigService } from '@nestjs/config';
 
 @Controller('api/stripe')
@@ -11,6 +12,7 @@ export class StripeWebhooksController {
 
   constructor(
     private readonly appointmentsService: AppointmentsService,
+    private readonly stripeConnectService: StripeConnectService,
     private readonly configService: ConfigService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
@@ -89,6 +91,12 @@ export class StripeWebhooksController {
           });
         }
 
+        break;
+      }
+      // ── Stripe Connect: status da conta do prestador ──────────────────────
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account;
+        await this.stripeConnectService.handleAccountUpdated(account.id);
         break;
       }
       default:

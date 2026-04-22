@@ -73,4 +73,19 @@ export class AppointmentsController {
   ) {
     return this.appointmentsService.updateStatus(id, dto, user.id);
   }
+
+  @Post('verify-payment')
+  @ApiOperation({
+    summary:
+      'Verifica uma Checkout Session Stripe e atualiza o agendamento se pago',
+  })
+  verifyPayment(
+    @Body('checkoutSessionId') checkoutSessionId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.appointmentsService.verifyPaymentSession(
+      checkoutSessionId,
+      user.id,
+    );
+  }
 }
