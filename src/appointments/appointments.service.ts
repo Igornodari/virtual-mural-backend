@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import Stripe from 'stripe';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { Payment } from './entities/payment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -29,6 +31,8 @@ const CUSTOMER_ONLY_STATUSES: AppointmentStatus[] = [
 @Injectable()
 export class AppointmentsService {
   private readonly logger = new Logger(AppointmentsService.name);
+  private readonly stripe: Stripe | null = null;
+
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentsRepo: Repository<Appointment>,
@@ -37,8 +41,14 @@ export class AppointmentsService {
     @InjectRepository(Payment)
     private readonly paymentsRepo: Repository<Payment>,
     private readonly messagingService: MessagingService,
+    private readonly configService: ConfigService,
     @Inject('PAYMENT_GATEWAY') private readonly paymentGateway: IPaymentGateway,
-  ) {}
+  ) {
+    const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    if (secretKey) {
+      this.stripe = new Stripe(secretKey, { apiVersion: '2026-02-25.clover' });
+    }
+  }
 
   private normalizeDay(day: string): string {
     return day.trim().toLowerCase();
@@ -118,13 +128,16 @@ export class AppointmentsService {
         serviceName: serviceWithProvider?.name || '',
         customerId: customer.id,
         customerName: customer.displayName ?? customer.email,
+        customerPhone: customer.phone ?? '',
         providerEmail: serviceWithProvider?.provider?.email ?? '',
         providerName:
           serviceWithProvider?.provider?.displayName ??
           serviceWithProvider?.provider?.email ??
           '',
-        scheduledDate: saved.scheduledDate,
+        providerPhone: serviceWithProvider?.provider?.phone ?? '',
+        scheduledDate: String(saved.scheduledDate),
         scheduledDay: saved.scheduledDay,
+        scheduledTime: saved.scheduledTime ?? '',
       });
 
       return saved;
@@ -146,6 +159,7 @@ export class AppointmentsService {
     await this.appointmentsRepo.manager.transaction(async (manager) => {
       const appointment = await manager.getRepository(Appointment).findOne({
         where: { id: params.appointmentId },
+        relations: ['customer', 'service', 'service.provider'],
       });
 
       if (!appointment) {
@@ -176,6 +190,26 @@ export class AppointmentsService {
 
       this.logger.log(
         `[handleStripeCheckoutSessionCompleted] appointment=${appointment.id} marcado como paid`,
+      );
+
+      // Publica evento para notificar o cliente via WhatsApp
+      await this.messagingService.publish(
+        MuralEvents.APPOINTMENT_STATUS_CHANGED,
+        {
+          appointmentId: appointment.id,
+          status: 'paid',
+          serviceName: appointment.service?.name ?? '',
+          customerEmail: appointment.customer?.email ?? '',
+          customerPhone: appointment.customer?.phone ?? '',
+          customerName:
+            appointment.customer?.displayName ??
+            appointment.customer?.email ??
+            '',
+          providerName: appointment.service?.provider?.displayName ?? '',
+          scheduledDate: String(appointment.scheduledDate ?? ''),
+          scheduledDay: appointment.scheduledDay ?? '',
+          scheduledTime: appointment.scheduledTime ?? '',
+        },
       );
     });
   }
@@ -305,6 +339,19 @@ export class AppointmentsService {
     return appointment;
   }
 
+  /** Versão segura do findOne: verifica se o requester é o cliente ou o prestador */
+  async findOneForUser(id: string, requesterId: string): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+    const isCustomer = appointment.customerId === requesterId;
+    const isProvider = appointment.service?.provider?.id === requesterId;
+
+    if (!isCustomer && !isProvider) {
+      throw new ForbiddenException('Acesso negado a este agendamento.');
+    }
+
+    return appointment;
+  }
+
   async updateStatus(
     id: string,
     dto: UpdateAppointmentStatusDto,
@@ -355,11 +402,15 @@ export class AppointmentsService {
         status: saved.status,
         serviceName: appointment.service?.name ?? '',
         customerEmail: appointment.customer?.email ?? '',
+        customerPhone: appointment.customer?.phone ?? '',
         customerName:
           appointment.customer?.displayName ??
           appointment.customer?.email ??
           '',
         providerName: appointment.service?.provider?.displayName ?? '',
+        scheduledDate: String(appointment.scheduledDate ?? ''),
+        scheduledDay: appointment.scheduledDay ?? '',
+        scheduledTime: appointment.scheduledTime ?? '',
       },
     );
 
@@ -411,8 +462,10 @@ export class AppointmentsService {
         );
       }
 
+      // Carrega service + provider (para ter o stripeAccountId do prestador)
       const service = await manager.getRepository(Service).findOne({
         where: { id: appointmentLocked.serviceId },
+        relations: ['provider'],
       });
 
       if (!service) {
@@ -422,6 +475,13 @@ export class AppointmentsService {
       }
 
       appointmentLocked.service = service;
+
+      // Só usa Connect split quando a conta do prestador está ativa no Stripe.
+      // Contas pending/restricted não têm a capability 'transfers' habilitada.
+      const providerStripeAccountId =
+        service.provider?.stripeAccountStatus === 'active'
+          ? (service.provider.stripeAccountId ?? null)
+          : null;
 
       const existing = await manager.getRepository(Payment).findOne({
         where: {
@@ -471,6 +531,7 @@ export class AppointmentsService {
       const paymentResult = await this.paymentGateway.createPayment(
         appointmentLocked,
         dto.method,
+        providerStripeAccountId,
       );
 
       this.logger.log(
@@ -483,6 +544,7 @@ export class AppointmentsService {
         method: dto.method,
         status: paymentResult.paymentStatus,
         externalPaymentId: paymentResult.paymentId,
+        checkoutSessionId: paymentResult.checkoutSessionId ?? null,
         checkoutUrl: paymentResult.checkoutUrl,
         qrCode: paymentResult.qrCode,
         qrCodeText: paymentResult.qrCodeText,
@@ -511,11 +573,15 @@ export class AppointmentsService {
           status: savedAppointment.status,
           serviceName: savedAppointment.service?.name ?? '',
           customerEmail: savedAppointment.customer?.email ?? '',
+          customerPhone: savedAppointment.customer?.phone ?? '',
           customerName:
             savedAppointment.customer?.displayName ??
             savedAppointment.customer?.email ??
             '',
           providerName: savedAppointment.service?.provider?.displayName ?? '',
+          scheduledDate: String(appointmentLocked.scheduledDate ?? ''),
+          scheduledDay: appointmentLocked.scheduledDay ?? '',
+          scheduledTime: appointmentLocked.scheduledTime ?? '',
         },
       );
 
@@ -556,11 +622,15 @@ export class AppointmentsService {
           status: appointment.status,
           serviceName: appointment.service?.name ?? '',
           customerEmail: appointment.customer?.email ?? '',
+          customerPhone: appointment.customer?.phone ?? '',
           customerName:
             appointment.customer?.displayName ??
             appointment.customer?.email ??
             '',
           providerName: appointment.service?.provider?.displayName ?? '',
+          scheduledDate: String(appointment.scheduledDate ?? ''),
+          scheduledDay: appointment.scheduledDay ?? '',
+          scheduledTime: appointment.scheduledTime ?? '',
         },
       );
     }
@@ -577,6 +647,59 @@ export class AppointmentsService {
 
     payment.status = 'failed';
     await this.paymentsRepo.save(payment);
+  }
+
+  /**
+   * Verifica se um Checkout Session Stripe foi pago e, se sim,
+   * atualiza o agendamento para 'paid'. Funciona como fallback quando
+   * o webhook não chega (ex: desenvolvimento local sem Stripe CLI).
+   */
+  async verifyPaymentSession(
+    checkoutSessionId: string,
+    requesterId: string,
+  ): Promise<Appointment> {
+    // Busca o payment pelo checkoutSessionId armazenado
+    const payment = await this.paymentsRepo.findOne({
+      where: { checkoutSessionId },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(
+        `Nenhum pagamento encontrado para a sessão ${checkoutSessionId}.`,
+      );
+    }
+
+    // Verifica se o agendamento pertence ao customer
+    const appointment = await this.findOne(payment.appointmentId);
+    if (appointment.customerId !== requesterId) {
+      throw new ForbiddenException('Acesso negado a este agendamento.');
+    }
+
+    // Se já está pago, retorna sem chamar Stripe
+    if (appointment.status === 'paid' || appointment.status === 'completed') {
+      return appointment;
+    }
+
+    // Consulta Stripe para confirmar pagamento
+    if (!this.stripe) {
+      throw new BadRequestException(
+        'Gateway de pagamento Stripe não configurado.',
+      );
+    }
+
+    const session =
+      await this.stripe.checkout.sessions.retrieve(checkoutSessionId);
+
+    if (session.payment_status === 'paid') {
+      await this.handleStripeCheckoutSessionCompleted({
+        appointmentId: payment.appointmentId,
+        sessionId: checkoutSessionId,
+      });
+      return this.findOne(payment.appointmentId);
+    }
+
+    // Sessão ainda não paga
+    return appointment;
   }
 
   async findMine(

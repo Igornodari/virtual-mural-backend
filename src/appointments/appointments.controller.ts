@@ -49,9 +49,12 @@ export class AppointmentsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Retorna um agendamento pelo ID' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.appointmentsService.findOne(id);
+  @ApiOperation({
+    summary:
+      'Retorna um agendamento pelo ID (apenas dono ou prestador do serviço)',
+  })
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.appointmentsService.findOneForUser(id, user.id);
   }
 
   @Post(':id/payment')
@@ -72,5 +75,20 @@ export class AppointmentsController {
     @CurrentUser() user: User,
   ) {
     return this.appointmentsService.updateStatus(id, dto, user.id);
+  }
+
+  @Post('verify-payment')
+  @ApiOperation({
+    summary:
+      'Verifica uma Checkout Session Stripe e atualiza o agendamento se pago',
+  })
+  verifyPayment(
+    @Body('checkoutSessionId') checkoutSessionId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.appointmentsService.verifyPaymentSession(
+      checkoutSessionId,
+      user.id,
+    );
   }
 }

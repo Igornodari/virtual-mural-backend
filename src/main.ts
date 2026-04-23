@@ -28,7 +28,9 @@ async function bootstrap() {
   // Health check endpoint — deve vir ANTES do bodyParser para funcionar corretamente
   app.use('/health', (_req: any, res: any) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+    res.end(
+      JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }),
+    );
   });
 
   app.use('/api/stripe/webhook', bodyParser.raw({ type: 'application/json' }));

@@ -5,6 +5,9 @@ import { IPaymentGateway } from './payment-gateway.interface';
 import { Appointment } from '../entities/appointment.entity';
 import { AppointmentPaymentResult } from '../dto/create-appointment-payment.dto';
 
+/** Taxa da plataforma (5%) */
+const PLATFORM_FEE_RATE = 0.05;
+
 @Injectable()
 export class StripePaymentGatewayService implements IPaymentGateway {
   private readonly logger = new Logger(StripePaymentGatewayService.name);
@@ -18,17 +21,17 @@ export class StripePaymentGatewayService implements IPaymentGateway {
 
     this.stripe = new Stripe(secretKey, {
       apiVersion: '2026-02-25.clover',
-      // optional: set timeout, maxNetworkRetries etc.
-      // timeout: 10000,
     });
   }
 
   async createPayment(
     appointment: Appointment,
     method: 'pix' | 'credit_card',
+    providerStripeAccountId?: string | null,
   ): Promise<AppointmentPaymentResult> {
     const amount = this.calculateAmount(appointment); // BRL cents
     const currency = 'brl';
+    const applicationFeeAmount = Math.round(amount * PLATFORM_FEE_RATE);
 
     const successUrl =
       this.config.get<string>('STRIPE_SUCCESS_URL') ||
@@ -37,20 +40,37 @@ export class StripePaymentGatewayService implements IPaymentGateway {
       this.config.get<string>('STRIPE_CANCEL_URL') ||
       'http://localhost:4200/payment-cancel';
 
+    const hasConnectAccount = !!providerStripeAccountId;
+
     try {
       if (method === 'pix') {
-        const paymentIntent = await this.stripe.paymentIntents.create({
+        /**
+         * PIX com Stripe Connect:
+         * - Usa `application_fee_amount` + `transfer_data.destination` para split
+         * - Se prestador não tem conta Connect, coleta para plataforma normalmente
+         */
+        const pixParams: Stripe.PaymentIntentCreateParams = {
           amount,
           currency,
           payment_method_types: ['pix'],
           metadata: {
             appointmentId: appointment.id,
             serviceId: appointment.serviceId,
+            platformFeePercent: '5',
           },
-        });
+        };
+
+        if (hasConnectAccount) {
+          pixParams.application_fee_amount = applicationFeeAmount;
+          pixParams.transfer_data = { destination: providerStripeAccountId };
+        }
+
+        const paymentIntent =
+          await this.stripe.paymentIntents.create(pixParams);
 
         this.logger.log(
-          `Criado PaymentIntent PIX ${paymentIntent.id} para appointment ${appointment.id}`,
+          `Criado PaymentIntent PIX ${paymentIntent.id} para appointment ${appointment.id}` +
+            (hasConnectAccount ? ` (Connect: ${providerStripeAccountId})` : ''),
         );
 
         return {
@@ -62,7 +82,12 @@ export class StripePaymentGatewayService implements IPaymentGateway {
         };
       }
 
-      const session = await this.stripe.checkout.sessions.create({
+      /**
+       * Cartão de crédito via Checkout Session com split automático:
+       * - `payment_intent_data.application_fee_amount` retém 5% na plataforma
+       * - `payment_intent_data.transfer_data.destination` envia 95% ao prestador
+       */
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
         ui_mode: 'hosted',
         payment_method_types: ['card'],
         mode: 'payment',
@@ -86,7 +111,20 @@ export class StripePaymentGatewayService implements IPaymentGateway {
           appointmentId: appointment.id,
           serviceId: appointment.serviceId,
         },
-      });
+      };
+
+      if (hasConnectAccount) {
+        sessionParams.payment_intent_data = {
+          application_fee_amount: applicationFeeAmount,
+          transfer_data: { destination: providerStripeAccountId },
+          metadata: {
+            appointmentId: appointment.id,
+            serviceId: appointment.serviceId,
+          },
+        };
+      }
+
+      const session = await this.stripe.checkout.sessions.create(sessionParams);
 
       const paymentId =
         typeof session.payment_intent === 'string'
@@ -94,20 +132,19 @@ export class StripePaymentGatewayService implements IPaymentGateway {
           : session.payment_intent?.id || session.id;
 
       this.logger.log(
-        `Criada Checkout Session ${session.id} para appointment ${appointment.id}, payment_intent=${paymentId}`,
+        `Criada Checkout Session ${session.id} para appointment ${appointment.id}` +
+          (hasConnectAccount
+            ? ` (Connect: ${providerStripeAccountId}, fee: ${applicationFeeAmount} cts)`
+            : ''),
       );
 
       const checkoutUrl = session.url || '';
       if (!checkoutUrl) {
-        this.logger.error('Stripe checkout session sem URL retornada');
         throw new Error('Stripe Checkout session sem URL retornada');
       }
 
-      // Verificar se a URL retornada está no formato esperado de Checkout Session
       if (!checkoutUrl.includes('/pay/cs_')) {
-        this.logger.warn(
-          `URL de checkout inesperada: ${checkoutUrl} (esperado /pay/cs_)`,
-        );
+        this.logger.warn(`URL de checkout inesperada: ${checkoutUrl}`);
       }
 
       return {
@@ -139,6 +176,6 @@ export class StripePaymentGatewayService implements IPaymentGateway {
       throw new Error(`Preço do serviço inválido: ${priceStr}`);
     }
 
-    return Math.round(numericPrice * 100); // Convert to cents
+    return Math.round(numericPrice * 100);
   }
 }

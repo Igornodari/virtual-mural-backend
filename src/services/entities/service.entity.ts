@@ -36,6 +36,12 @@ export class Service {
   @Column('simple-array')
   availableDays: string[];
 
+  /** Disponibilidade por dia com horários de início e fim */
+  @Column({ type: 'json', nullable: true })
+  availabilitySlots:
+    | { day: string; startTime: string; endTime: string }[]
+    | null;
+
   @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
   rating: number;
 

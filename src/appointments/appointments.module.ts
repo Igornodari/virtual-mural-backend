@@ -10,10 +10,13 @@ import { StripePaymentGatewayService } from './payment/stripe-payment-gateway.se
 import { MockPaymentGatewayService } from './payment/mock-payment-gateway.service';
 import { StripeWebhooksController } from './webhooks/stripe-webhooks.controller';
 import { MessagingModule } from '../messaging/messaging.module';
+import { StripeConnectModule } from '../stripe-connect/stripe-connect.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Appointment, Payment, Service]),
     MessagingModule,
+    StripeConnectModule,
   ],
   controllers: [AppointmentsController, StripeWebhooksController],
   providers: [
