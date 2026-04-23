@@ -200,10 +200,9 @@ export class AppointmentsService {
         where: { id: params.appointmentId },
       });
 
-      if (appointment && appointment.status === 'awaiting_payment') {
-        appointment.status = 'confirmed';
-        await manager.getRepository(Appointment).save(appointment);
-      }
+      // Mantém em awaiting_payment — o cliente pode tentar pagar novamente.
+      // Não revertemos para confirmed porque o fluxo correto é:
+      // se o pagamento falhar/expirar, o agendamento continua aguardando pagamento.
 
       this.logger.log(
         `[handleStripeCheckoutSessionExpired] appointment=${params.appointmentId} sessão expirada`,
@@ -325,7 +324,7 @@ export class AppointmentsService {
     const validTransitions: Record<AppointmentStatus, AppointmentStatus[]> = {
       pending: ['confirmed', 'cancelled'],
       confirmed: ['cancelled'],
-      awaiting_payment: [],
+      awaiting_payment: ['cancelled'], // provider pode cancelar se cliente nunca pagar
       paid: ['completed'],
       cancelled: [],
       completed: [],
@@ -591,5 +590,37 @@ export class AppointmentsService {
     }
 
     throw new ForbiddenException('Utilizador sem role válido.');
+  }
+
+  async verifyPaymentSession(checkoutSessionId: string): Promise<Appointment> {
+    const session = await this.paymentGateway.retrieveCheckoutSession(checkoutSessionId);
+
+    if (!session.appointmentId) {
+      throw new BadRequestException('Sessão Stripe sem appointmentId no metadata.');
+    }
+
+    const appointment = await this.appointmentsRepo.findOne({
+      where: { id: session.appointmentId },
+      relations: ['service', 'service.provider', 'customer'],
+    });
+
+    if (!appointment) {
+      throw new NotFoundException(`Agendamento ${session.appointmentId} não encontrado.`);
+    }
+
+    // Se o Stripe já marcou como pago e o agendamento ainda não está, sincroniza
+    if (session.paymentStatus === 'paid' && appointment.status !== 'paid') {
+      await this.handleStripeCheckoutSessionCompleted({
+        appointmentId: session.appointmentId,
+        sessionId: checkoutSessionId,
+      });
+
+      appointment.status = 'paid';
+      this.logger.log(
+        `[verifyPaymentSession] Appointment ${session.appointmentId} sincronizado para paid via polling`,
+      );
+    }
+
+    return appointment;
   }
 }

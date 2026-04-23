@@ -89,6 +89,10 @@ export class User {
   @OneToMany(() => Review, (review) => review.author)
   reviews: Review[];
 
+  // ── Stripe Connect ─────────────────────────────────────────────────────────
+  @Column({ type: 'varchar', nullable: true, default: null })
+  stripeConnectAccountId: string | null;
+
   @Column({ nullable: true })
   lastLoginAt: Date;
 

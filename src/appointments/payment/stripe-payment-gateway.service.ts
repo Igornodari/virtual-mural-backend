@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { IPaymentGateway } from './payment-gateway.interface';
+import { IPaymentGateway, CheckoutSessionStatus } from './payment-gateway.interface';
 import { Appointment } from '../entities/appointment.entity';
 import { AppointmentPaymentResult } from '../dto/create-appointment-payment.dto';
 
@@ -123,6 +123,14 @@ export class StripePaymentGatewayService implements IPaymentGateway {
       );
       throw error;
     }
+  }
+
+  async retrieveCheckoutSession(sessionId: string): Promise<CheckoutSessionStatus> {
+    const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+    return {
+      appointmentId: (session.metadata?.appointmentId as string) ?? null,
+      paymentStatus: session.payment_status,
+    };
   }
 
   private calculateAmount(appointment: Appointment): number {
