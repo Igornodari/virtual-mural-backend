@@ -5,34 +5,10 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  ArrayMinSize,
   ValidateNested,
-  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export class AvailabilitySlotDto {
-  @ApiProperty({ example: 'Segunda-feira' })
-  @IsString()
-  @IsNotEmpty()
-  day!: string;
-
-  @ApiProperty({ example: '09:00' })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
-    message: 'startTime deve estar no formato HH:mm',
-  })
-  startTime: string | undefined;
-
-  @ApiProperty({ example: '18:00' })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
-    message: 'endTime deve estar no formato HH:mm',
-  })
-  endTime!: string;
-}
+import { AvailabilitySlotDto } from './availability-slot.dto';
 
 export class CreateServiceDto {
   @ApiProperty({ example: 'Encanamento Residencial' })
@@ -63,36 +39,23 @@ export class CreateServiceDto {
   @IsNotEmpty()
   category: string;
 
-  @ApiProperty({
-    example: [
-      'Segunda-feira',
-      'Terça-feira',
-      'Quarta-feira',
-      'Quinta-feira',
-      'Sexta-feira',
-      'Sábado',
-      'Domingo',
-    ],
-    description: 'Dias da semana disponíveis para agendamento',
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsString({ each: true })
-  availableDays: string[] | undefined;
-
   @ApiPropertyOptional({
-    description: 'Horários disponíveis por dia',
-    example: [
-      {
-        day: 'Segunda-feira',
-        startTime: '09:00',
-        endTime: '18:00',
-      },
-    ],
+    example: ['Segunda-feira', 'Terça-feira'],
+    description:
+      'Dias da semana disponíveis (preenchido automaticamente a partir de availabilitySlots quando fornecido)',
   })
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
+  @IsString({ each: true })
+  availableDays?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      'Disponibilidade por dia com horários (substitui availableDays quando fornecido)',
+    type: [AvailabilitySlotDto],
+  })
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AvailabilitySlotDto)
   availabilitySlots?: AvailabilitySlotDto[];

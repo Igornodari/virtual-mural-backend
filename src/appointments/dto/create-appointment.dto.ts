@@ -47,16 +47,16 @@ export class CreateAppointmentDto {
   ])
   scheduledDay: string;
 
-  @ApiProperty({
-    example: '12:00',
-    description: 'Horário escolhido para o agendamento no formato HH:mm',
+  @ApiPropertyOptional({
+    example: '09:00',
+    description: 'Horário agendado (HH:mm)',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
     message: 'scheduledTime deve estar no formato HH:mm',
   })
-  scheduledTime: string;
+  scheduledTime?: string;
 
   @ApiPropertyOptional({ example: 'Preciso trocar o sifão da pia da cozinha.' })
   @IsOptional()

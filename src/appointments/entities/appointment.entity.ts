@@ -29,8 +29,8 @@ export class Appointment {
   @Column({ nullable: true })
   scheduledDay: string;
 
-  @Column({ type: 'time', nullable: true })
-  scheduledTime: string;
+  @Column({ type: 'varchar', nullable: true })
+  scheduledTime: string | null;
 
   @Column({ type: 'text', nullable: true })
   notes: string;

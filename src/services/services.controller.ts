@@ -60,18 +60,6 @@ export class ServicesController {
     return this.servicesService.getProviderAnalytics(user.id);
   }
 
-  @Get(':id/analytics')
-  @ApiOperation({
-    summary:
-      'Retorna analytics de um serviço específico (apenas o prestador dono)',
-  })
-  getAnalytics(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
-    return this.servicesService.getAnalytics(id, user.id);
-  }
-
   @Get(':id')
   @ApiOperation({ summary: 'Retorna detalhes de um serviço com avaliações' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {

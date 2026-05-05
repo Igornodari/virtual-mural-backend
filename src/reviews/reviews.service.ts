@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from './entities/review.entity';
@@ -26,11 +30,18 @@ export class ReviewsService {
   ) {}
 
   async create(dto: CreateReviewDto, author: User): Promise<Review> {
+    // Impede avaliações duplicadas do mesmo usuário para o mesmo serviço
+    const existing = await this.reviewsRepo.findOne({
+      where: { serviceId: dto.serviceId, authorId: author.id },
+    });
+    if (existing) {
+      throw new ConflictException('Você já avaliou este serviço.');
+    }
+
     const review = this.reviewsRepo.create({
       ...dto,
       authorId: author.id,
     });
-
     const saved = await this.reviewsRepo.save(review);
 
     await this.servicesService.recalcRating(dto.serviceId);

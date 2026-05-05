@@ -35,6 +35,10 @@ export class Payment {
   @Column()
   externalPaymentId: string;
 
+  /** ID da Checkout Session do Stripe (cs_...) — usado para verificar status pós-redirect */
+  @Column({ type: 'varchar', nullable: true })
+  checkoutSessionId: string | null;
+
   @Column({ nullable: true })
   checkoutUrl: string;
 
