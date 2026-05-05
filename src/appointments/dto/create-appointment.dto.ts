@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
 } from 'class-validator';
 
 export class CreateAppointmentDto {
@@ -21,7 +22,7 @@ export class CreateAppointmentDto {
   scheduledDate: string;
 
   @ApiProperty({
-    example: 'Terca',
+    example: 'Terça-feira',
     description: 'Dia da semana escolhido',
     enum: [
       'Segunda-feira',
@@ -45,6 +46,17 @@ export class CreateAppointmentDto {
     'Domingo',
   ])
   scheduledDay: string;
+
+  @ApiProperty({
+    example: '12:00',
+    description: 'Horário escolhido para o agendamento no formato HH:mm',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
+    message: 'scheduledTime deve estar no formato HH:mm',
+  })
+  scheduledTime: string;
 
   @ApiPropertyOptional({ example: 'Preciso trocar o sifão da pia da cozinha.' })
   @IsOptional()

@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger, RequestMethod } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
@@ -16,22 +16,23 @@ async function bootstrap() {
     app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
   }
 
-  app.setGlobalPrefix('api/v1', {
-    exclude: [
-      {
-        path: 'api/stripe/webhook',
-        method: RequestMethod.POST,
-      },
-    ],
-  });
+  app.setGlobalPrefix('api/v1');
 
-  // Health check endpoint — deve vir ANTES do bodyParser para funcionar corretamente
   app.use('/health', (_req: any, res: any) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+    res.end(
+      JSON.stringify({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+      }),
+    );
   });
 
-  app.use('/api/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
+  app.use(
+    '/api/v1/stripe/webhook',
+    bodyParser.raw({ type: 'application/json' }),
+  );
+
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -74,6 +75,8 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
+
   logger.log(`🚀 Servidor rodando em http://localhost:${port}/api/v1`);
 }
+
 void bootstrap();
