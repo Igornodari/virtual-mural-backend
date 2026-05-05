@@ -30,7 +30,7 @@ export class Appointment {
   scheduledDay: string;
 
   @Column({ type: 'varchar', nullable: true })
-  scheduledTime: string | null;
+  scheduledTime: string;
 
   @Column({ type: 'text', nullable: true })
   notes: string;
