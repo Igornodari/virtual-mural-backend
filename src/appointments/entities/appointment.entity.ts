@@ -24,10 +24,13 @@ export class Appointment {
   id: string;
 
   @Column({ type: 'date' })
-  scheduledDate: Date;
+  scheduledDate: string;
 
   @Column({ nullable: true })
   scheduledDay: string;
+
+  @Column({ type: 'time', nullable: true })
+  scheduledTime: string;
 
   @Column({ type: 'text', nullable: true })
   notes: string;
