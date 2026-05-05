@@ -22,7 +22,7 @@ export class CreateAppointmentDto {
   scheduledDate: string;
 
   @ApiProperty({
-    example: 'Terca',
+    example: 'Terça-feira',
     description: 'Dia da semana escolhido',
     enum: [
       'Segunda-feira',

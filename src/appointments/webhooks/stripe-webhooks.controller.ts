@@ -5,7 +5,7 @@ import { AppointmentsService } from '../appointments.service';
 import { StripeConnectService } from '../../stripe-connect/stripe-connect.service';
 import { ConfigService } from '@nestjs/config';
 
-@Controller('api/stripe')
+@Controller('stripe')
 export class StripeWebhooksController {
   private readonly stripe: Stripe;
   private readonly logger = new Logger(StripeWebhooksController.name);

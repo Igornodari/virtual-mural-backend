@@ -24,7 +24,7 @@ export class Appointment {
   id: string;
 
   @Column({ type: 'date' })
-  scheduledDate: Date;
+  scheduledDate: string;
 
   @Column({ nullable: true })
   scheduledDay: string;

@@ -28,6 +28,17 @@ const CUSTOMER_ONLY_STATUSES: AppointmentStatus[] = [
   'completed',
 ];
 
+type BlockedSlot = {
+  scheduledDate: string;
+  scheduledTime: string;
+};
+
+type ServiceAvailabilityResponse = {
+  serviceId: string;
+  blockedDates: string[];
+  blockedSlots: BlockedSlot[];
+};
+
 @Injectable()
 export class AppointmentsService {
   private readonly logger = new Logger(AppointmentsService.name);
@@ -98,6 +109,9 @@ export class AppointmentsService {
         .andWhere('appointment.scheduledDate = :scheduledDate', {
           scheduledDate: dto.scheduledDate,
         })
+        .andWhere('appointment.scheduledTime = :scheduledTime', {
+          scheduledTime: dto.scheduledTime,
+        })
         .andWhere('appointment.status IN (:...busyStatuses)', {
           busyStatuses: CUSTOMER_ONLY_STATUSES,
         })
@@ -105,7 +119,7 @@ export class AppointmentsService {
 
       if (conflictingAppointment) {
         throw new BadRequestException(
-          'Já existe agendamento confirmado/pago/concluído para este dia e serviço.',
+          'Já existe agendamento confirmado/pago/concluído para este dia, horário e serviço.',
         );
       }
 
@@ -142,6 +156,26 @@ export class AppointmentsService {
 
       return saved;
     });
+  }
+
+  async findServiceBlockedSlots(serviceId: string): Promise<BlockedSlot[]> {
+    const statuses = ['confirmed', 'awaiting_payment', 'paid', 'completed'];
+
+    const rows = await this.appointmentsRepo
+      .createQueryBuilder('appointment')
+      .select('appointment.scheduledDate', 'scheduledDate')
+      .addSelect('appointment.scheduledTime', 'scheduledTime')
+      .where('appointment.serviceId = :serviceId', { serviceId })
+      .andWhere('appointment.status IN (:...statuses)', { statuses })
+      .andWhere('appointment.scheduledTime IS NOT NULL')
+      .groupBy('appointment.scheduledDate')
+      .addGroupBy('appointment.scheduledTime')
+      .getRawMany<BlockedSlot>();
+
+    return rows.map((row) => ({
+      scheduledDate: row.scheduledDate,
+      scheduledTime: row.scheduledTime?.slice(0, 5),
+    }));
   }
 
   async findByCustomer(customerId: string): Promise<Appointment[]> {
@@ -267,7 +301,7 @@ export class AppointmentsService {
   async findByService(
     serviceId: string,
     requester: User,
-  ): Promise<Appointment[] | { serviceId: string; blockedDates: string[] }> {
+  ): Promise<Appointment[] | ServiceAvailabilityResponse> {
     const service = await this.servicesRepo.findOne({
       where: { id: serviceId },
       relations: ['provider'],
@@ -282,8 +316,13 @@ export class AppointmentsService {
     }
 
     if (requester.roleInCondominium === 'customer') {
-      const blockedDates = await this.findServiceBlockedDays(serviceId);
-      return { serviceId, blockedDates };
+      const blockedSlots = await this.findServiceBlockedSlots(serviceId);
+
+      return {
+        serviceId,
+        blockedDates: [],
+        blockedSlots,
+      };
     }
 
     throw new ForbiddenException(
@@ -291,15 +330,17 @@ export class AppointmentsService {
     );
   }
 
-  private async assertNoServiceDayConflict(
+  private async assertNoServiceTimeConflict(
     serviceId: string,
     scheduledDate: string | Date,
+    scheduledTime: string,
     exceptAppointmentId?: string,
   ) {
     const conflicting = await this.appointmentsRepo
       .createQueryBuilder('appointment')
       .where('appointment.serviceId = :serviceId', { serviceId })
       .andWhere('appointment.scheduledDate = :scheduledDate', { scheduledDate })
+      .andWhere('appointment.scheduledTime = :scheduledTime', { scheduledTime })
       .andWhere('appointment.status IN (:...busyStatuses)', {
         busyStatuses: ['confirmed', 'awaiting_payment', 'paid', 'completed'],
       })
@@ -310,11 +351,10 @@ export class AppointmentsService {
 
     if (conflicting) {
       throw new BadRequestException(
-        'Conflito de agenda: já existe agendamento ativo para esta data e serviço.',
+        'Conflito de agenda: já existe agendamento ativo para esta data, horário e serviço.',
       );
     }
   }
-
   async findServiceBlockedDays(serviceId: string): Promise<string[]> {
     const statuses = ['confirmed', 'awaiting_payment', 'paid', 'completed'];
     const rows = await this.appointmentsRepo
@@ -385,9 +425,10 @@ export class AppointmentsService {
     }
 
     if (nextStatus === 'confirmed') {
-      await this.assertNoServiceDayConflict(
+      await this.assertNoServiceTimeConflict(
         appointment.serviceId,
         appointment.scheduledDate,
+        appointment.scheduledTime,
         appointment.id,
       );
     }
@@ -505,8 +546,7 @@ export class AppointmentsService {
 
         if (isStaleUrl) {
           this.logger.warn(
-            `[payAppointment] checkoutUrl obsoleta detectada para payment ${existing.id}: ` +
-              `"${existing.checkoutUrl}" — marcando como failed e criando nova sessão`,
+            `[payAppointment] checkoutUrl obsoleta detectada para payment ${existing.id}: "${existing.checkoutUrl}" — marcando como failed e criando nova sessão`,
           );
           existing.status = 'failed';
           await manager.getRepository(Payment).save(existing);
@@ -535,8 +575,7 @@ export class AppointmentsService {
       );
 
       this.logger.log(
-        `[payAppointment] Nova sessão criada: paymentId=${paymentResult.paymentId} ` +
-          `checkoutUrl=${paymentResult.checkoutUrl} checkoutSessionId=${paymentResult.checkoutSessionId}`,
+        `[payAppointment] Nova sessão criada: paymentId=${paymentResult.paymentId} checkoutUrl=${paymentResult.checkoutUrl} checkoutSessionId=${paymentResult.checkoutSessionId}`,
       );
 
       const paymentEntity = manager.getRepository(Payment).create({
