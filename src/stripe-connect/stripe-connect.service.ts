@@ -91,10 +91,15 @@ export class StripeConnectService {
 
   /**
    * Retorna o status atual da conta Stripe Connect do prestador.
+   *
+   * Deriva o status a partir do dado ao vivo da Stripe (charges_enabled / payouts_enabled /
+   * requirements.disabled_reason) e sincroniza o banco se houver divergência.
+   * Isso garante que o frontend recebe o estado correto mesmo se o webhook
+   * `account.updated` ainda não tiver sido processado.
    */
   async getStatus(providerId: string): Promise<{
     accountId: string | null;
-    status: string | null;
+    status: 'pending' | 'active' | 'restricted' | null;
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
   }> {
@@ -113,12 +118,38 @@ export class StripeConnectService {
       provider.stripeAccountId,
     );
 
+    const liveStatus = this.deriveStatus(account);
+
+    // Sincroniza DB se o status mudou (caminho safety-net caso webhook atrase)
+    if (provider.stripeAccountStatus !== liveStatus) {
+      provider.stripeAccountStatus = liveStatus;
+      await this.usersRepo.save(provider);
+      this.logger.log(
+        `Status sincronizado via getStatus: ${provider.stripeAccountId} → ${liveStatus}`,
+      );
+    }
+
     return {
       accountId: provider.stripeAccountId,
-      status: provider.stripeAccountStatus,
+      status: liveStatus,
       chargesEnabled: account.charges_enabled,
       payoutsEnabled: account.payouts_enabled,
     };
+  }
+
+  /**
+   * Deriva o status (`pending`/`active`/`restricted`) a partir da resposta da Stripe.
+   * Centraliza a lógica pra ser usada tanto no `getStatus` quanto no webhook `account.updated`.
+   */
+  private deriveStatus(
+    account: Stripe.Account,
+  ): 'pending' | 'active' | 'restricted' {
+    const isActive = account.charges_enabled && account.payouts_enabled;
+    const isRestricted = !isActive && !!account.requirements?.disabled_reason;
+
+    if (isActive) return 'active';
+    if (isRestricted) return 'restricted';
+    return 'pending';
   }
 
   /**
@@ -156,19 +187,19 @@ export class StripeConnectService {
       return;
     }
 
-    const isActive = account.charges_enabled && account.payouts_enabled;
-    const isRestricted = !isActive && account.requirements?.disabled_reason;
+    const newStatus = this.deriveStatus(account);
 
-    const newStatus = isActive
-      ? 'active'
-      : isRestricted
-        ? 'restricted'
-        : 'pending';
+    if (provider.stripeAccountStatus === newStatus) {
+      // Sem mudança — evita save desnecessário (account.updated dispara muitas vezes)
+      return;
+    }
 
     provider.stripeAccountStatus = newStatus;
     await this.usersRepo.save(provider);
 
-    this.logger.log(`Conta Stripe ${stripeAccountId} → status: ${newStatus}`);
+    this.logger.log(
+      `Conta Stripe ${stripeAccountId} → status: ${newStatus} (via webhook)`,
+    );
   }
 
   /**
