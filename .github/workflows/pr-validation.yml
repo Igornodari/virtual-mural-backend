@@ -40,9 +40,16 @@ jobs:
       - name: Check branch name follows git flow
         run: |
           BRANCH="${{ github.head_ref }}"
+          # Branches principais do git flow (develop/master) são fontes válidas
+          # pra PRs de promoção (ex: develop → master no release).
+          if [[ "$BRANCH" =~ ^(develop|master|main)$ ]]; then
+            echo "✅ Source branch '$BRANCH' is a main git flow branch — allowed."
+            exit 0
+          fi
           if [[ ! "$BRANCH" =~ ^(feature|bugfix|hotfix|release|chore)/.+ ]]; then
             echo "❌ Branch name '$BRANCH' does not follow git flow."
             echo "Expected: feature/*, bugfix/*, hotfix/*, release/*, chore/*"
+            echo "         (or develop/master/main for release promotion PRs)"
             exit 1
           fi
           echo "✅ Branch name '$BRANCH' is valid."
