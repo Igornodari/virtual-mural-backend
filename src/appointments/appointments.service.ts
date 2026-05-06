@@ -745,13 +745,94 @@ export class AppointmentsService {
     user: User,
   ): Promise<Appointment[] | { blockedDates: string[] }> {
     if (user.roleInCondominium === 'provider') {
+      await this.syncPendingPaymentsForProvider(user.id);
       return this.findByProvider(user.id);
     }
 
     if (user.roleInCondominium === 'customer') {
+      await this.syncPendingPaymentsForCustomer(user.id);
       return this.findByCustomer(user.id);
     }
 
     throw new ForbiddenException('Utilizador sem role válido.');
+  }
+
+  private async syncPendingPaymentsForCustomer(
+    customerId: string,
+  ): Promise<void> {
+    if (!this.stripe) {
+      return;
+    }
+
+    const payments = await this.paymentsRepo
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.appointment', 'appointment')
+      .where('appointment.customerId = :customerId', { customerId })
+      .andWhere('appointment.status = :appointmentStatus', {
+        appointmentStatus: 'awaiting_payment',
+      })
+      .andWhere('payment.status IN (:...paymentStatuses)', {
+        paymentStatuses: ['pending', 'processing'],
+      })
+      .andWhere('payment.checkoutSessionId IS NOT NULL')
+      .orderBy('payment.createdAt', 'DESC')
+      .getMany();
+
+    for (const payment of payments) {
+      if (!payment.checkoutSessionId) {
+        continue;
+      }
+
+      const session = await this.stripe.checkout.sessions.retrieve(
+        payment.checkoutSessionId,
+      );
+
+      if (session.payment_status === 'paid') {
+        await this.handleStripeCheckoutSessionCompleted({
+          appointmentId: payment.appointmentId,
+          sessionId: payment.checkoutSessionId,
+        });
+      }
+    }
+  }
+
+  private async syncPendingPaymentsForProvider(
+    providerId: string,
+  ): Promise<void> {
+    if (!this.stripe) {
+      return;
+    }
+
+    const payments = await this.paymentsRepo
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.appointment', 'appointment')
+      .leftJoinAndSelect('appointment.service', 'service')
+      .where('service.providerId = :providerId', { providerId })
+      .andWhere('appointment.status = :appointmentStatus', {
+        appointmentStatus: 'awaiting_payment',
+      })
+      .andWhere('payment.status IN (:...paymentStatuses)', {
+        paymentStatuses: ['pending', 'processing'],
+      })
+      .andWhere('payment.checkoutSessionId IS NOT NULL')
+      .orderBy('payment.createdAt', 'DESC')
+      .getMany();
+
+    for (const payment of payments) {
+      if (!payment.checkoutSessionId) {
+        continue;
+      }
+
+      const session = await this.stripe.checkout.sessions.retrieve(
+        payment.checkoutSessionId,
+      );
+
+      if (session.payment_status === 'paid') {
+        await this.handleStripeCheckoutSessionCompleted({
+          appointmentId: payment.appointmentId,
+          sessionId: payment.checkoutSessionId,
+        });
+      }
+    }
   }
 }
