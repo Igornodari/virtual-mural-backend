@@ -16,24 +16,33 @@ import { StripeConnectModule } from './stripe-connect/stripe-connect.module';
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        username: config.get<string>('DB_USERNAME', 'postgres'),
-        password: config.get<string>('DB_PASSWORD', 'postgres'),
-        database: config.get<string>('DB_NAME', 'virtual_mural'),
-        autoLoadEntities: true,
-        synchronize: config.get<string>('DB_SYNC', 'true') === 'true',
-        logging:
-          config.get<string>('NODE_ENV') === 'development'
-            ? ['error', 'warn']
-            : false,
-        ssl:
-          config.get<string>('NODE_ENV') === 'production'
-            ? { rejectUnauthorized: false }
-            : false,
-      }),
+      useFactory: (config: ConfigService) => {
+        const isSynchronizeOn =
+          config.get<string>('DB_SYNC', 'true') === 'true';
+
+        return {
+          type: 'postgres',
+          host: config.get<string>('DB_HOST', 'localhost'),
+          port: config.get<number>('DB_PORT', 5432),
+          username: config.get<string>('DB_USERNAME', 'postgres'),
+          password: config.get<string>('DB_PASSWORD', 'postgres'),
+          database: config.get<string>('DB_NAME', 'virtual_mural'),
+          autoLoadEntities: true,
+          // Em dev (DB_SYNC=true) o synchronize cria/altera colunas automaticamente.
+          // Em produção (DB_SYNC=false) sincronizamos via migrations executadas no boot.
+          synchronize: isSynchronizeOn,
+          migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+          migrationsRun: !isSynchronizeOn,
+          logging:
+            config.get<string>('NODE_ENV') === 'development'
+              ? ['error', 'warn']
+              : false,
+          ssl:
+            config.get<string>('NODE_ENV') === 'production'
+              ? { rejectUnauthorized: false }
+              : false,
+        };
+      },
     }),
     AuthModule,
     UsersModule,
