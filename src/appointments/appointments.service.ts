@@ -458,6 +458,71 @@ export class AppointmentsService {
     return saved;
   }
 
+  /**
+   * Cancela o agendamento como MORADOR (customer).
+   *
+   * Regra de negócio: o morador pode cancelar livremente enquanto o
+   * pagamento ainda não foi efetivado (status `pending` ou
+   * `awaiting_payment`). Depois de pago não há reembolso pelo app —
+   * a ideia é desencorajar desistências e proteger o prestador.
+   *
+   * Diferente do `updateStatus`, que exige perfil de provider, este
+   * método é o único caminho do customer alterar o status.
+   */
+  async cancelByCustomer(
+    id: string,
+    requesterId: string,
+  ): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+
+    if (appointment.customerId !== requesterId) {
+      throw new ForbiddenException(
+        'Apenas o solicitante do agendamento pode cancelá-lo.',
+      );
+    }
+
+    // O morador pode cancelar enquanto não houver pagamento efetivado.
+    // 'pending' (provider ainda não aceitou) e 'confirmed' (aceito mas
+    // não pago) também entram aqui — assim o morador desiste sem ônus.
+    // Depois de 'paid' a regra de não reembolsar protege o prestador.
+    const cancellableStatuses: AppointmentStatus[] = [
+      'pending',
+      'confirmed',
+      'awaiting_payment',
+    ];
+
+    if (!cancellableStatuses.includes(appointment.status)) {
+      throw new BadRequestException(
+        `Não é possível cancelar um agendamento com status "${appointment.status}". ` +
+          `Após o pagamento confirmado o cancelamento deve ser tratado diretamente com o prestador.`,
+      );
+    }
+
+    appointment.status = 'cancelled';
+    const saved = await this.appointmentsRepo.save(appointment);
+
+    await this.messagingService.publish(
+      MuralEvents.APPOINTMENT_STATUS_CHANGED,
+      {
+        appointmentId: saved.id,
+        status: saved.status,
+        serviceName: appointment.service?.name ?? '',
+        customerEmail: appointment.customer?.email ?? '',
+        customerPhone: appointment.customer?.phone ?? '',
+        customerName:
+          appointment.customer?.displayName ??
+          appointment.customer?.email ??
+          '',
+        providerName: appointment.service?.provider?.displayName ?? '',
+        scheduledDate: String(appointment.scheduledDate ?? ''),
+        scheduledDay: appointment.scheduledDay ?? '',
+        scheduledTime: appointment.scheduledTime ?? '',
+      },
+    );
+
+    return saved;
+  }
+
   async payAppointment(
     id: string,
     dto: CreateAppointmentPaymentDto,
