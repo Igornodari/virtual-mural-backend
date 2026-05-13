@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/require-await --
+   Specs e fakes de repositório usam `any` deliberadamente para simular a
+   API do TypeORM sem precisar implementar todos os métodos. As checagens
+   de segurança não se aplicam a mocks. */
 /**
  * Testes do ServicesService — foco no novo gate `isProvider` e nas
  * regras de ACL para edição/remoção.
  */
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { ServicesService } from './services.service';
@@ -147,14 +148,18 @@ describe('ServicesService', () => {
 
   describe('update', () => {
     it('rejeita usuário que não é o dono do serviço', async () => {
-      repo.findOne.mockResolvedValue(makeServiceEntity({ providerId: 'owner' }));
+      repo.findOne.mockResolvedValue(
+        makeServiceEntity({ providerId: 'owner' }),
+      );
       await expect(
         service.update('svc-1', { name: 'novo' } as any, 'invasor'),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('aceita update vindo do dono', async () => {
-      repo.findOne.mockResolvedValue(makeServiceEntity({ providerId: 'owner' }));
+      repo.findOne.mockResolvedValue(
+        makeServiceEntity({ providerId: 'owner' }),
+      );
       const result = await service.update(
         'svc-1',
         { name: 'novo nome' } as any,
@@ -166,7 +171,9 @@ describe('ServicesService', () => {
 
   describe('remove', () => {
     it('rejeita usuário que não é o dono', async () => {
-      repo.findOne.mockResolvedValue(makeServiceEntity({ providerId: 'owner' }));
+      repo.findOne.mockResolvedValue(
+        makeServiceEntity({ providerId: 'owner' }),
+      );
       await expect(service.remove('svc-1', 'invasor')).rejects.toThrow(
         ForbiddenException,
       );
@@ -195,9 +202,9 @@ describe('ServicesService', () => {
       repo.findOne.mockResolvedValue(
         makeServiceEntity({ providerId: 'owner', reviews: [] } as any),
       );
-      await expect(
-        service.getAnalytics('svc-1', 'invasor'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getAnalytics('svc-1', 'invasor')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('retorna distribuição de ratings consolidada para o dono', async () => {
@@ -212,7 +219,13 @@ describe('ServicesService', () => {
         } as any),
       );
       const result = await service.getAnalytics('svc-1', 'owner');
-      expect(result.ratingDistribution).toEqual({ 1: 0, 2: 0, 3: 0, 4: 1, 5: 2 });
+      expect(result.ratingDistribution).toEqual({
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 1,
+        5: 2,
+      });
       expect(result.recentComments).toHaveLength(2); // só os com comment
     });
   });
@@ -227,9 +240,9 @@ describe('ServicesService', () => {
 
     it('rejeita serviço inexistente', async () => {
       repo.findOne.mockResolvedValue(null);
-      await expect(
-        service.trackMetric('missing', 'interests'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.trackMetric('missing', 'interests')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

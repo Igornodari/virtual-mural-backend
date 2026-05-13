@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/require-await --
+   Specs e fakes de repositório usam `any` deliberadamente para simular a
+   API do TypeORM sem precisar implementar todos os métodos. As checagens
+   de segurança não se aplicam a mocks. */
 /**
  * Testes do AppointmentsService. Foco nas regras de negócio críticas
  * para a release: bloqueio de auto-agendamento, tagging correto de
@@ -141,7 +145,9 @@ describe('AppointmentsService', () => {
     appointmentsRepo = {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn().mockResolvedValue(null),
-      createQueryBuilder: jest.fn(() => makeQueryBuilder({ many: [], one: null })),
+      createQueryBuilder: jest.fn(() =>
+        makeQueryBuilder({ many: [], one: null }),
+      ),
       manager: {
         // Por padrão a transação executa o callback com um manager mockado
         // que devolve a service stub-ada e cria um appointment ecoando o
@@ -159,7 +165,10 @@ describe('AppointmentsService', () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
         AppointmentsService,
-        { provide: getRepositoryToken(Appointment), useValue: appointmentsRepo },
+        {
+          provide: getRepositoryToken(Appointment),
+          useValue: appointmentsRepo,
+        },
         { provide: getRepositoryToken(Service), useValue: servicesRepo },
         { provide: getRepositoryToken(Payment), useValue: paymentsRepo },
         { provide: MessagingService, useValue: messaging },
@@ -186,33 +195,35 @@ describe('AppointmentsService', () => {
      * porque praticamente todo teste de `create` precisa dele.
      */
     function arrangeTransaction(svc: Service | null) {
-      appointmentsRepo.manager.transaction.mockImplementation(async (cb: any) => {
-        const manager = {
-          getRepository: (entity: unknown) => {
-            if (entity === Service) {
-              return {
-                findOne: jest.fn().mockResolvedValue(svc),
-              };
-            }
-            if (entity === Appointment) {
-              return {
-                createQueryBuilder: jest.fn(() =>
-                  makeQueryBuilder({ one: null }),
-                ),
-                create: jest.fn().mockImplementation((data) => ({
-                  ...data,
-                  id: 'appt-new',
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                })),
-                save: jest.fn().mockImplementation(async (data) => data),
-              };
-            }
-            return {};
-          },
-        };
-        return cb(manager);
-      });
+      appointmentsRepo.manager.transaction.mockImplementation(
+        async (cb: any) => {
+          const manager = {
+            getRepository: (entity: unknown) => {
+              if (entity === Service) {
+                return {
+                  findOne: jest.fn().mockResolvedValue(svc),
+                };
+              }
+              if (entity === Appointment) {
+                return {
+                  createQueryBuilder: jest.fn(() =>
+                    makeQueryBuilder({ one: null }),
+                  ),
+                  create: jest.fn().mockImplementation((data) => ({
+                    ...data,
+                    id: 'appt-new',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  })),
+                  save: jest.fn().mockImplementation(async (data) => data),
+                };
+              }
+              return {};
+            },
+          };
+          return cb(manager);
+        },
+      );
     }
 
     it('rejeita usuário sem condomínio', async () => {
@@ -220,7 +231,11 @@ describe('AppointmentsService', () => {
 
       await expect(
         service.create(
-          { serviceId: 'service-1', scheduledDate: '2026-06-01', scheduledDay: 'monday' } as any,
+          {
+            serviceId: 'service-1',
+            scheduledDate: '2026-06-01',
+            scheduledDay: 'monday',
+          } as any,
           customer,
         ),
       ).rejects.toThrow(ForbiddenException);
@@ -235,7 +250,11 @@ describe('AppointmentsService', () => {
 
       await expect(
         service.create(
-          { serviceId: 'service-1', scheduledDate: '2026-06-01', scheduledDay: 'monday' } as any,
+          {
+            serviceId: 'service-1',
+            scheduledDate: '2026-06-01',
+            scheduledDay: 'monday',
+          } as any,
           customer,
         ),
       ).rejects.toThrow(NotFoundException);
@@ -247,7 +266,11 @@ describe('AppointmentsService', () => {
 
       await expect(
         service.create(
-          { serviceId: 'service-1', scheduledDate: '2026-06-01', scheduledDay: 'monday' } as any,
+          {
+            serviceId: 'service-1',
+            scheduledDate: '2026-06-01',
+            scheduledDay: 'monday',
+          } as any,
           customer,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -261,7 +284,11 @@ describe('AppointmentsService', () => {
 
       await expect(
         service.create(
-          { serviceId: 'service-1', scheduledDate: '2026-06-01', scheduledDay: 'monday' } as any,
+          {
+            serviceId: 'service-1',
+            scheduledDate: '2026-06-01',
+            scheduledDay: 'monday',
+          } as any,
           customer,
         ),
       ).rejects.toThrow(ForbiddenException);
@@ -275,7 +302,11 @@ describe('AppointmentsService', () => {
 
       await expect(
         service.create(
-          { serviceId: 'service-1', scheduledDate: '2026-06-01', scheduledDay: 'monday' } as any,
+          {
+            serviceId: 'service-1',
+            scheduledDate: '2026-06-01',
+            scheduledDay: 'monday',
+          } as any,
           customer,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -283,7 +314,10 @@ describe('AppointmentsService', () => {
 
     it('aceita agendamento válido e dispara evento de mensageria', async () => {
       arrangeTransaction(
-        makeService({ providerId: 'other-provider', availableDays: ['monday'] }),
+        makeService({
+          providerId: 'other-provider',
+          availableDays: ['monday'],
+        }),
       );
       // Quando o save final é chamado, é dentro do servicesRepo via
       // manager.findOne(provider). Mock global do servicesRepo para
@@ -294,51 +328,53 @@ describe('AppointmentsService', () => {
 
       // Ajusta a transação para também responder ao findOne do
       // serviceWithProvider, no final do método.
-      appointmentsRepo.manager.transaction.mockImplementation(async (cb: any) => {
-        const manager = {
-          getRepository: (entity: unknown) => {
-            if (entity === Service) {
-              return {
-                findOne: jest.fn().mockImplementation(({ relations }) => {
-                  if (relations?.includes('provider')) {
-                    return Promise.resolve({
-                      ...makeService({
+      appointmentsRepo.manager.transaction.mockImplementation(
+        async (cb: any) => {
+          const manager = {
+            getRepository: (entity: unknown) => {
+              if (entity === Service) {
+                return {
+                  findOne: jest.fn().mockImplementation(({ relations }) => {
+                    if (relations?.includes('provider')) {
+                      return Promise.resolve({
+                        ...makeService({
+                          providerId: 'other-provider',
+                          availableDays: ['monday'],
+                        }),
+                        provider: makeUser({
+                          id: 'other-provider',
+                          email: 'p@example.com',
+                          displayName: 'Provider',
+                        }),
+                      });
+                    }
+                    return Promise.resolve(
+                      makeService({
                         providerId: 'other-provider',
                         availableDays: ['monday'],
                       }),
-                      provider: makeUser({
-                        id: 'other-provider',
-                        email: 'p@example.com',
-                        displayName: 'Provider',
-                      }),
-                    });
-                  }
-                  return Promise.resolve(
-                    makeService({
-                      providerId: 'other-provider',
-                      availableDays: ['monday'],
-                    }),
-                  );
-                }),
-              };
-            }
-            if (entity === Appointment) {
-              return {
-                createQueryBuilder: jest.fn(() =>
-                  makeQueryBuilder({ one: null }),
-                ),
-                create: jest.fn().mockImplementation((data) => ({
-                  ...data,
-                  id: 'appt-new',
-                })),
-                save: jest.fn().mockImplementation(async (d) => d),
-              };
-            }
-            return {};
-          },
-        };
-        return cb(manager);
-      });
+                    );
+                  }),
+                };
+              }
+              if (entity === Appointment) {
+                return {
+                  createQueryBuilder: jest.fn(() =>
+                    makeQueryBuilder({ one: null }),
+                  ),
+                  create: jest.fn().mockImplementation((data) => ({
+                    ...data,
+                    id: 'appt-new',
+                  })),
+                  save: jest.fn().mockImplementation(async (d) => d),
+                };
+              }
+              return {};
+            },
+          };
+          return cb(manager);
+        },
+      );
 
       const saved = await service.create(
         {
@@ -458,8 +494,14 @@ describe('AppointmentsService', () => {
 
     it('ordena por scheduledDate desc', async () => {
       const user = makeUser({ id: 'u', isProvider: false });
-      const older = makeAppointment({ id: 'older', scheduledDate: '2026-01-01' });
-      const newer = makeAppointment({ id: 'newer', scheduledDate: '2026-12-31' });
+      const older = makeAppointment({
+        id: 'older',
+        scheduledDate: '2026-01-01',
+      });
+      const newer = makeAppointment({
+        id: 'newer',
+        scheduledDate: '2026-12-31',
+      });
 
       appointmentsRepo.find.mockResolvedValue([older, newer]);
       appointmentsRepo.createQueryBuilder.mockReturnValue(
@@ -478,9 +520,9 @@ describe('AppointmentsService', () => {
       servicesRepo.findOne.mockResolvedValue(null);
       const requester = makeUser();
 
-      await expect(
-        service.findByService('missing', requester),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findByService('missing', requester)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('devolve a lista completa para o prestador do serviço', async () => {
@@ -499,7 +541,10 @@ describe('AppointmentsService', () => {
     });
 
     it('devolve apenas blockedSlots para outro morador do MESMO condomínio (não expõe dados de cliente)', async () => {
-      const svc = makeService({ providerId: 'provider-1', condominiumId: 'condo-1' });
+      const svc = makeService({
+        providerId: 'provider-1',
+        condominiumId: 'condo-1',
+      });
       servicesRepo.findOne.mockResolvedValue(svc);
       appointmentsRepo.createQueryBuilder.mockReturnValue(
         makeQueryBuilder({
@@ -507,7 +552,10 @@ describe('AppointmentsService', () => {
         }),
       );
 
-      const requester = makeUser({ id: 'other-resident', condominiumId: 'condo-1' });
+      const requester = makeUser({
+        id: 'other-resident',
+        condominiumId: 'condo-1',
+      });
       const result = await service.findByService(svc.id, requester);
 
       expect(Array.isArray(result)).toBe(false);
@@ -519,13 +567,19 @@ describe('AppointmentsService', () => {
       // Esse é o teste de regressão da vulnerabilidade descoberta durante
       // o desenvolvimento: antes da correção, qualquer morador podia ver
       // os blockedSlots de qualquer serviço, independente do condomínio.
-      const svc = makeService({ providerId: 'provider-1', condominiumId: 'condo-A' });
+      const svc = makeService({
+        providerId: 'provider-1',
+        condominiumId: 'condo-A',
+      });
       servicesRepo.findOne.mockResolvedValue(svc);
 
-      const intruder = makeUser({ id: 'other-condo', condominiumId: 'condo-B' });
-      await expect(
-        service.findByService(svc.id, intruder),
-      ).rejects.toThrow(ForbiddenException);
+      const intruder = makeUser({
+        id: 'other-condo',
+        condominiumId: 'condo-B',
+      });
+      await expect(service.findByService(svc.id, intruder)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('rejeita usuário sem condomínio', async () => {
@@ -537,9 +591,9 @@ describe('AppointmentsService', () => {
         condominiumId: null,
       });
 
-      await expect(
-        service.findByService(svc.id, requester),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.findByService(svc.id, requester)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -548,7 +602,10 @@ describe('AppointmentsService', () => {
   describe('findOneForUser', () => {
     it('permite acesso ao cliente do agendamento', async () => {
       appointmentsRepo.findOne.mockResolvedValue(
-        makeAppointment({ customerId: 'me', service: { provider: { id: 'p1' } } } as any),
+        makeAppointment({
+          customerId: 'me',
+          service: { provider: { id: 'p1' } },
+        } as any),
       );
       const result = await service.findOneForUser('appt-1', 'me');
       expect(result).toBeDefined();
@@ -572,9 +629,9 @@ describe('AppointmentsService', () => {
           service: { provider: { id: 'b' } },
         } as any),
       );
-      await expect(
-        service.findOneForUser('appt-1', 'intruso'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.findOneForUser('appt-1', 'intruso')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

@@ -852,9 +852,7 @@ export class AppointmentsService {
    */
   async findMine(user: User): Promise<AppointmentWithViewerRole[]> {
     if (!user.condominiumId) {
-      throw new ForbiddenException(
-        'Usuário sem vínculo com condomínio.',
-      );
+      throw new ForbiddenException('Usuário sem vínculo com condomínio.');
     }
 
     // Sempre sincroniza pagamentos pendentes do usuário como cliente

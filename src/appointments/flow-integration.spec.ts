@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/require-await --
+   Specs e fakes de repositório usam `any` deliberadamente para simular a
+   API do TypeORM sem precisar implementar todos os métodos. As checagens
+   de segurança não se aplicam a mocks. */
 /**
  * Teste de integração do fluxo crítico:
  *   morador → vira prestador → publica serviço →
@@ -33,11 +37,14 @@ function makeUserRepo() {
     findOne: jest.fn(async ({ where }: any) => {
       if (where?.id) return users.get(where.id) ?? null;
       if (where?.cognitoSub) {
-        return [...users.values()].find((u) => u.cognitoSub === where.cognitoSub) ?? null;
+        return (
+          [...users.values()].find((u) => u.cognitoSub === where.cognitoSub) ??
+          null
+        );
       }
       return null;
     }),
-    create: jest.fn((data: Partial<User>) => ({ ...data } as User)),
+    create: jest.fn((data: Partial<User>) => ({ ...data }) as User),
     save: jest.fn(async (user: User) => {
       // Atribui id se for novo
       if (!user.id) user.id = `user-${users.size + 1}`;
@@ -46,14 +53,6 @@ function makeUserRepo() {
     }),
     find: jest.fn(async () => [...users.values()]),
   };
-}
-
-// Adiciona a UsersService o que falta nos fakes pra os novos guards
-function injectExtraUserRepoMethods(userRepo: any) {
-  // Não usado diretamente — o UsersService precisa dos repositórios
-  // de Service e Appointment. Eles são criados separados (servicesRepo,
-  // appointmentsRepo) e injetados na fábrica.
-  return userRepo;
 }
 
 function makeServiceRepo() {
@@ -76,7 +75,7 @@ function makeServiceRepo() {
     }),
     create: jest.fn(
       (data: Partial<Service>) =>
-        ({ ...data, id: `svc-${services.size + 1}` } as Service),
+        ({ ...data, id: `svc-${services.size + 1}` }) as Service,
     ),
     save: jest.fn(async (svc: Service) => {
       if (!svc.id) svc.id = `svc-${services.size + 1}`;
@@ -128,7 +127,10 @@ function makeAppointmentRepo() {
         leftJoinAndSelect: () => builder,
         innerJoin: () => builder,
         where: (sql: string, params: any) => {
-          if (sql.includes('service.providerId') || sql.includes('providerId')) {
+          if (
+            sql.includes('service.providerId') ||
+            sql.includes('providerId')
+          ) {
             providerFilter = params.providerId ?? params.userId;
           }
           return builder;
@@ -161,7 +163,8 @@ function makeAppointmentRepo() {
         getCount: async () => {
           const filter = (a: Appointment) => {
             const svc = serviceRepoRef!._services.get(a.serviceId);
-            if (providerFilter && svc?.providerId !== providerFilter) return false;
+            if (providerFilter && svc?.providerId !== providerFilter)
+              return false;
             if (statusFilter && !statusFilter.includes(a.status)) return false;
             return true;
           };
@@ -238,7 +241,21 @@ describe('Fluxo crítico: morador → prestador → agendamento', () => {
         { provide: getRepositoryToken(Appointment), useValue: appointmentRepo },
         {
           provide: getRepositoryToken(Payment),
-          useValue: { createQueryBuilder: () => ({ leftJoinAndSelect: () => ({ where: () => ({ andWhere: () => ({ andWhere: () => ({ andWhere: () => ({ orderBy: () => ({ getMany: async () => [] }) }) }) }) }) }) }) },
+          useValue: {
+            createQueryBuilder: () => ({
+              leftJoinAndSelect: () => ({
+                where: () => ({
+                  andWhere: () => ({
+                    andWhere: () => ({
+                      andWhere: () => ({
+                        orderBy: () => ({ getMany: async () => [] }),
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          },
         },
         { provide: MessagingService, useValue: messaging },
         { provide: ConfigService, useValue: { get: () => undefined } },
@@ -269,7 +286,7 @@ describe('Fluxo crítico: morador → prestador → agendamento', () => {
 
     // ── 2) Alice vira prestador
     await usersService.updateOnboarding(alice.id, { isProvider: true });
-    const aliceWithProviderRole = (await usersService.findById(alice.id))!;
+    const aliceWithProviderRole = await usersService.findById(alice.id);
     expect(aliceWithProviderRole.isProvider).toBe(true);
 
     // ── 3) Alice publica serviço
@@ -290,12 +307,12 @@ describe('Fluxo crítico: morador → prestador → agendamento', () => {
     await expect(
       servicesService.create(
         { name: 'X', availableDays: ['friday'] } as any,
-        (await usersService.findById(bob.id))!,
+        await usersService.findById(bob.id),
       ),
     ).rejects.toThrow(/prestador/i);
 
     // ── 4) Bob agenda no serviço da Alice
-    const bobFresh = (await usersService.findById(bob.id))!;
+    const bobFresh = await usersService.findById(bob.id);
     const appointment = await appointmentsService.create(
       {
         serviceId: aliceService.id,
@@ -316,13 +333,13 @@ describe('Fluxo crítico: morador → prestador → agendamento', () => {
           scheduledDay: 'monday',
           scheduledTime: '14:00',
         } as any,
-        (await usersService.findById(alice.id))!,
+        await usersService.findById(alice.id),
       ),
     ).rejects.toThrow(/próprio/i);
 
     // ── 5) findMine para Alice (prestador): vê 1 item tagueado provider
     const aliceList = await appointmentsService.findMine(
-      (await usersService.findById(alice.id))!,
+      await usersService.findById(alice.id),
     );
     expect(aliceList).toHaveLength(1);
     expect(aliceList[0].viewerRole).toBe('provider');
@@ -351,7 +368,7 @@ describe('Fluxo crítico: morador → prestador → agendamento', () => {
 
     const svc = await servicesService.create(
       { name: 'X', availableDays: ['monday'] } as any,
-      (await usersService.findById(alice.id))!,
+      await usersService.findById(alice.id),
     );
     await appointmentsService.create(
       {
@@ -360,7 +377,7 @@ describe('Fluxo crítico: morador → prestador → agendamento', () => {
         scheduledDay: 'monday',
         scheduledTime: '10:00',
       } as any,
-      (await usersService.findById(bob.id))!,
+      await usersService.findById(bob.id),
     );
 
     // Alice tenta desativar modo prestador → bloqueado porque tem
