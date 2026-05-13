@@ -39,6 +39,17 @@ type ServiceAvailabilityResponse = {
   blockedSlots: BlockedSlot[];
 };
 
+/**
+ * Indica em qual papel o usuário autenticado se relaciona com o
+ * agendamento dentro de `findMine`. Permite que o frontend classifique
+ * cada item na aba correta sem depender de comparação de IDs.
+ */
+export type ViewerRole = 'customer' | 'provider';
+
+export type AppointmentWithViewerRole = Appointment & {
+  viewerRole: ViewerRole;
+};
+
 @Injectable()
 export class AppointmentsService {
   private readonly logger = new Logger(AppointmentsService.name);
@@ -69,9 +80,13 @@ export class AppointmentsService {
     dto: CreateAppointmentDto,
     customer: User,
   ): Promise<Appointment> {
-    if (customer.roleInCondominium !== 'customer') {
+    // Qualquer morador (= usuário autenticado e vinculado a um condomínio)
+    // pode solicitar agendamentos, incluindo prestadores agendando serviços
+    // de outros prestadores. A restrição de "não agendar o próprio serviço"
+    // é aplicada mais abaixo, comparando providerId com customer.id.
+    if (!customer.condominiumId) {
       throw new ForbiddenException(
-        'Apenas customers podem solicitar agendamentos.',
+        'Apenas moradores vinculados a um condomínio podem solicitar agendamentos.',
       );
     }
 
@@ -86,6 +101,17 @@ export class AppointmentsService {
 
       if (!service.isActive) {
         throw new BadRequestException('Serviço inativo não pode ser agendado.');
+      }
+
+      // Um prestador não pode agendar seu próprio serviço — esse caso é
+      // ambíguo (ele aparece nas duas listas, "como morador" e "como
+      // prestador"), além de não fazer sentido de negócio. Bloqueamos
+      // aqui no backend para garantir a regra independente de qual UI
+      // está fazendo a chamada.
+      if (service.providerId === customer.id) {
+        throw new ForbiddenException(
+          'Você não pode agendar seu próprio serviço.',
+        );
       }
 
       const normalizedDay = this.normalizeDay(dto.scheduledDay);
@@ -315,7 +341,13 @@ export class AppointmentsService {
       return this.findByServiceRaw(serviceId);
     }
 
-    if (requester.roleInCondominium === 'customer') {
+    // Apenas moradores do MESMO condomínio podem ver a disponibilidade
+    // do serviço. Antes da correção, qualquer morador de qualquer
+    // condomínio podia consultar — privacy leak descoberto via testes.
+    if (
+      requester.condominiumId &&
+      requester.condominiumId === service.condominiumId
+    ) {
       const blockedSlots = await this.findServiceBlockedSlots(serviceId);
 
       return {
@@ -326,7 +358,7 @@ export class AppointmentsService {
     }
 
     throw new ForbiddenException(
-      'Apenas cliente ou provider podem acessar este recurso.',
+      'Apenas moradores do mesmo condomínio podem acessar este recurso.',
     );
   }
 
@@ -806,20 +838,65 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async findMine(
-    user: User,
-  ): Promise<Appointment[] | { blockedDates: string[] }> {
-    if (user.roleInCondominium === 'provider') {
-      await this.syncPendingPaymentsForProvider(user.id);
-      return this.findByProvider(user.id);
+  /**
+   * Retorna todos os agendamentos do usuário, tanto os que ele solicitou
+   * como morador/cliente quanto os que ele recebeu como prestador (se for
+   * o caso).
+   *
+   * Cada item recebe um campo `viewerRole` indicando como o usuário
+   * autenticado se relaciona com aquele agendamento ('customer' = ele
+   * solicitou; 'provider' = ele é o dono do serviço). O frontend usa
+   * esse campo para classificar cada agendamento na aba correta sem
+   * precisar comparar IDs (que poderiam vir de fontes diferentes —
+   * Cognito sub vs. id do banco — e gerar bugs sutis).
+   */
+  async findMine(user: User): Promise<AppointmentWithViewerRole[]> {
+    if (!user.condominiumId) {
+      throw new ForbiddenException(
+        'Usuário sem vínculo com condomínio.',
+      );
     }
 
-    if (user.roleInCondominium === 'customer') {
-      await this.syncPendingPaymentsForCustomer(user.id);
-      return this.findByCustomer(user.id);
+    // Sempre sincroniza pagamentos pendentes do usuário como cliente
+    await this.syncPendingPaymentsForCustomer(user.id);
+    // E como prestador — `findByProvider` simplesmente retorna vazio se
+    // o usuário não tiver serviços, sem custo extra. Não gateamos pelo
+    // `user.isProvider` aqui porque a flag pode estar dessincronizada
+    // dos dados (ex.: usuários migrados de modelos antigos que têm
+    // serviços ativos mas a flag ainda não foi atualizada).
+    await this.syncPendingPaymentsForProvider(user.id);
+
+    // Marcamos cada item com `viewerRole` para o frontend exibir na aba
+    // correta. Usamos um Map por id para resolver casos legados onde o
+    // mesmo agendamento aparece nas duas listas (auto-agendamento, hoje
+    // bloqueado em create). A versão de "prestador" tem prioridade
+    // porque é onde a ação relevante acontece.
+    const tagged = new Map<string, AppointmentWithViewerRole>();
+
+    for (const appointment of await this.findByCustomer(user.id)) {
+      tagged.set(
+        appointment.id,
+        Object.assign(appointment, { viewerRole: 'customer' as const }),
+      );
     }
 
-    throw new ForbiddenException('Utilizador sem role válido.');
+    for (const appointment of await this.findByProvider(user.id)) {
+      // Caso ambíguo (legado): mesmo usuário é cliente e prestador.
+      // Mantemos a entrada na lista de cliente (já adicionada acima).
+      if (appointment.customerId === user.id) {
+        continue;
+      }
+      tagged.set(
+        appointment.id,
+        Object.assign(appointment, { viewerRole: 'provider' as const }),
+      );
+    }
+
+    return Array.from(tagged.values()).sort((a, b) => {
+      const aTime = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
+      const bTime = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+      return bTime - aTime;
+    });
   }
 
   private async syncPendingPaymentsForCustomer(
