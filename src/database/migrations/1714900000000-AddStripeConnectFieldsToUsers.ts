@@ -8,9 +8,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Necessário para o fluxo de Stripe Connect Express (provedores recebem
  * pagamentos via plataforma com taxa de marketplace de 5%).
  */
-export class AddStripeConnectFieldsToUsers1714900000000
-  implements MigrationInterface
-{
+export class AddStripeConnectFieldsToUsers1714900000000 implements MigrationInterface {
   name = 'AddStripeConnectFieldsToUsers1714900000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

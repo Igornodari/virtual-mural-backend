@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/require-await --
+   Specs e fakes de repositório usam `any` deliberadamente para simular a
+   API do TypeORM sem precisar implementar todos os métodos. As checagens
+   de segurança não se aplicam a mocks. */
 /**
  * Testes do UsersService. Cobre o fluxo de updateOnboarding sob o
  * novo modelo de papéis (sem `roleInCondominium`/`roleCompleted`).
@@ -74,7 +78,10 @@ describe('UsersService', () => {
         UsersService,
         { provide: getRepositoryToken(User), useValue: repo },
         { provide: getRepositoryToken(Service), useValue: servicesRepo },
-        { provide: getRepositoryToken(Appointment), useValue: appointmentsRepo },
+        {
+          provide: getRepositoryToken(Appointment),
+          useValue: appointmentsRepo,
+        },
       ],
     }).compile();
 
@@ -92,7 +99,10 @@ describe('UsersService', () => {
         givenName: 'New',
       });
       expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ cognitoSub: 'sub-new', email: 'new@example.com' }),
+        expect.objectContaining({
+          cognitoSub: 'sub-new',
+          email: 'new@example.com',
+        }),
       );
       expect(repo.save).toHaveBeenCalled();
     });
@@ -173,7 +183,9 @@ describe('UsersService', () => {
 
     it('atualiza isProvider quando fornecido', async () => {
       repo.findOne.mockResolvedValue(makeUserEntity({ isProvider: false }));
-      const result = await service.updateOnboarding('u-1', { isProvider: true });
+      const result = await service.updateOnboarding('u-1', {
+        isProvider: true,
+      });
       expect(result.isProvider).toBe(true);
     });
 
@@ -181,7 +193,9 @@ describe('UsersService', () => {
       repo.findOne.mockResolvedValue(
         makeUserEntity({ isProvider: true, addressCompleted: true }),
       );
-      const result = await service.updateOnboarding('u-1', { isProvider: false });
+      const result = await service.updateOnboarding('u-1', {
+        isProvider: false,
+      });
       expect(result.isProvider).toBe(false);
     });
 
@@ -214,7 +228,9 @@ describe('UsersService', () => {
       repo.findOne.mockResolvedValue(
         makeUserEntity({ addressCompleted: false }),
       );
-      const result = await service.updateOnboarding('u-1', { isProvider: true });
+      const result = await service.updateOnboarding('u-1', {
+        isProvider: true,
+      });
       expect(result.addressCompleted).toBe(false);
       expect(result.onboardingCompleted).toBe(false);
     });
@@ -241,9 +257,9 @@ describe('UsersService', () => {
     it('bloqueia desativação quando há serviço ativo', async () => {
       servicesRepo.count.mockResolvedValue(2);
 
-      await expect(
-        service.assertCanDeactivateProvider('u-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.assertCanDeactivateProvider('u-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('bloqueia desativação quando há agendamento aberto mesmo sem serviços ativos', async () => {
@@ -256,9 +272,9 @@ describe('UsersService', () => {
         }),
       });
 
-      await expect(
-        service.assertCanDeactivateProvider('u-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.assertCanDeactivateProvider('u-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('updateOnboarding({isProvider:false}) chama o guard quando o usuário ERA prestador', async () => {

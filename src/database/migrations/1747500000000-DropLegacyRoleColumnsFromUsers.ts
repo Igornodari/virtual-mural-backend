@@ -21,9 +21,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *     `roleCompleted` ficará false — basta o app antigo refazer o
  *     onboarding se for o caso.
  */
-export class DropLegacyRoleColumnsFromUsers1747500000000
-  implements MigrationInterface
-{
+export class DropLegacyRoleColumnsFromUsers1747500000000 implements MigrationInterface {
   name = 'DropLegacyRoleColumnsFromUsers1747500000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
