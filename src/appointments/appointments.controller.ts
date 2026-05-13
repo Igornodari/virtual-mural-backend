@@ -77,6 +77,18 @@ export class AppointmentsController {
     return this.appointmentsService.updateStatus(id, dto, user.id);
   }
 
+  @Patch(':id/cancel')
+  @ApiOperation({
+    summary:
+      'Cancela o agendamento como morador. Permitido apenas enquanto o pagamento ainda não foi efetivado (status pending ou awaiting_payment).',
+  })
+  cancelByCustomer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.appointmentsService.cancelByCustomer(id, user.id);
+  }
+
   @Post('verify-payment')
   @ApiOperation({
     summary:

@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsUUID } from 'class-validator';
-import type { UserRole } from '../entities/user.entity';
+import { IsBoolean, IsOptional, IsUUID } from 'class-validator';
 
 export class UpdateOnboardingDto {
   @ApiPropertyOptional({
@@ -11,10 +10,12 @@ export class UpdateOnboardingDto {
   condominiumId?: string;
 
   @ApiPropertyOptional({
-    enum: ['provider', 'customer'],
-    description: 'Perfil do usuário no condomínio',
+    description:
+      'Ativa o modo prestador para o usuário. Quando true, libera acesso à ' +
+      'área de publicação de serviços. Pode ser revertido para false desde ' +
+      'que o usuário não tenha serviços ativos nem agendamentos pendentes.',
   })
   @IsOptional()
-  @IsEnum(['provider', 'customer'])
-  roleInCondominium?: UserRole;
+  @IsBoolean()
+  isProvider?: boolean;
 }

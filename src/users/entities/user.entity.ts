@@ -13,7 +13,6 @@ import { Service } from '../../services/entities/service.entity';
 import { Appointment } from '../../appointments/entities/appointment.entity';
 import { Review } from '../../reviews/entities/review.entity';
 
-export type UserRole = 'provider' | 'customer';
 export type AuthProvider = 'google' | 'cognito' | 'email-password' | 'unknown';
 
 @Entity('users')
@@ -53,21 +52,19 @@ export class User {
   authProvider: AuthProvider;
 
   // ── Onboarding ─────────────────────────────────────────────────────────────
-  @Column({
-    type: 'enum',
-    enum: ['provider', 'customer'],
-    nullable: true,
-  })
-  roleInCondominium: UserRole | null;
+  /**
+   * Flag opt-in que indica que o usuário ativou o modo prestador e pode
+   * publicar serviços. Todo usuário autenticado e vinculado a um
+   * condomínio já é morador; este é um papel adicional.
+   */
+  @Column({ default: false })
+  isProvider: boolean;
 
   @Column({ default: false })
   onboardingCompleted: boolean;
 
   @Column({ default: false })
   addressCompleted: boolean;
-
-  @Column({ default: false })
-  roleCompleted: boolean;
 
   // ── Relacionamentos ────────────────────────────────────────────────────────
   @ManyToOne(() => Condominium, (condo) => condo.users, {
