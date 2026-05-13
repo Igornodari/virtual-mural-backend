@@ -34,6 +34,14 @@ export class ServicesService {
   ) {}
 
   async create(dto: CreateServiceDto, provider: User): Promise<Service> {
+    // Apenas usuários que ativaram o modo prestador podem publicar serviços.
+    // Moradores comuns precisam clicar em "Virar prestador" no perfil antes.
+    if (!provider.isProvider) {
+      throw new ForbiddenException(
+        'Ative o modo prestador no seu perfil antes de publicar serviços.',
+      );
+    }
+
     const condominiumId = dto.condominiumId ?? provider.condominiumId;
     if (!condominiumId) {
       throw new ForbiddenException(
@@ -57,6 +65,9 @@ export class ServicesService {
       availableDays,
       providerId: provider.id,
       condominiumId,
+      // Explícito mesmo com default no Postgres — testes de integração e
+      // qualquer consumidor que leia o objeto antes do INSERT ver true.
+      isActive: true,
     });
 
     const saved = await this.servicesRepo.save(service);

@@ -28,10 +28,11 @@ export class UsersController {
 
   @Patch('me/onboarding')
   @ApiOperation({
-    summary: 'Salva o condomínio e/ou o perfil do usuário (onboarding)',
+    summary: 'Salva o condomínio e/ou o opt-in de prestador',
     description:
-      'Endpoint chamado pelo frontend após o usuário informar o endereço do condomínio e escolher seu perfil. ' +
-      'Pode ser chamado em duas etapas separadas (primeiro condominiumId, depois roleInCondominium).',
+      'Endpoint chamado pelo frontend para vincular o usuário a um ' +
+      'condomínio durante o onboarding, ou para ativar/desativar o ' +
+      'modo prestador a qualquer momento.',
   })
   updateOnboarding(
     @CurrentUser() user: User,
