@@ -17,7 +17,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 
-import { AppointmentsService } from './appointments.service';
+import { AppointmentsService } from './services/appointments.service';
 import { Appointment } from './entities/appointment.entity';
 import { Payment } from './entities/payment.entity';
 import { Service } from '../services/entities/service.entity';
