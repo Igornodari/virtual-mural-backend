@@ -169,6 +169,7 @@ export class AppointmentsService {
         customerId: customer.id,
         customerName: customer.displayName ?? customer.email,
         customerPhone: customer.phone ?? '',
+        providerId: serviceWithProvider?.provider?.id ?? '',
         providerEmail: serviceWithProvider?.provider?.email ?? '',
         providerName:
           serviceWithProvider?.provider?.displayName ??
@@ -252,19 +253,23 @@ export class AppointmentsService {
         `[handleStripeCheckoutSessionCompleted] appointment=${appointment.id} marcado como paid`,
       );
 
-      // Publica evento para notificar o cliente via WhatsApp
+      // Publica evento para notificar o cliente via WhatsApp + in-app/push
       await this.messagingService.publish(
         MuralEvents.APPOINTMENT_STATUS_CHANGED,
         {
           appointmentId: appointment.id,
           status: 'paid',
+          actor: 'system',
+          serviceId: appointment.serviceId,
           serviceName: appointment.service?.name ?? '',
+          customerId: appointment.customerId,
           customerEmail: appointment.customer?.email ?? '',
           customerPhone: appointment.customer?.phone ?? '',
           customerName:
             appointment.customer?.displayName ??
             appointment.customer?.email ??
             '',
+          providerId: appointment.service?.provider?.id ?? '',
           providerName: appointment.service?.provider?.displayName ?? '',
           scheduledDate: String(appointment.scheduledDate ?? ''),
           scheduledDay: appointment.scheduledDay ?? '',
@@ -278,6 +283,8 @@ export class AppointmentsService {
     appointmentId: string;
     sessionId: string;
   }): Promise<void> {
+    let appointmentForEvent: Appointment | null = null;
+
     await this.appointmentsRepo.manager.transaction(async (manager) => {
       const payment = await manager.getRepository(Payment).findOne({
         where: { appointmentId: params.appointmentId },
@@ -292,6 +299,7 @@ export class AppointmentsService {
 
       const appointment = await manager.getRepository(Appointment).findOne({
         where: { id: params.appointmentId },
+        relations: ['customer', 'service', 'service.provider'],
       });
 
       if (appointment && appointment.status === 'awaiting_payment') {
@@ -299,10 +307,30 @@ export class AppointmentsService {
         await manager.getRepository(Appointment).save(appointment);
       }
 
+      appointmentForEvent = appointment;
+
       this.logger.log(
         `[handleStripeCheckoutSessionExpired] appointment=${params.appointmentId} sessão expirada`,
       );
     });
+
+    // Cenário 5: notifica morador (e prestador) que o pagamento falhou.
+    if (appointmentForEvent) {
+      const a = appointmentForEvent as Appointment;
+      await this.messagingService.publish(MuralEvents.PAYMENT_FAILED, {
+        appointmentId: a.id,
+        serviceId: a.serviceId,
+        serviceName: a.service?.name ?? '',
+        customerId: a.customerId,
+        customerName: a.customer?.displayName ?? a.customer?.email ?? '',
+        customerEmail: a.customer?.email ?? '',
+        providerId: a.service?.provider?.id ?? '',
+        providerName: a.service?.provider?.displayName ?? '',
+        scheduledDate: String(a.scheduledDate ?? ''),
+        scheduledDay: a.scheduledDay ?? '',
+        scheduledTime: a.scheduledTime ?? '',
+      });
+    }
   }
 
   async findByProvider(providerId: string): Promise<Appointment[]> {
@@ -473,13 +501,17 @@ export class AppointmentsService {
       {
         appointmentId: saved.id,
         status: saved.status,
+        actor: 'provider',
+        serviceId: appointment.serviceId,
         serviceName: appointment.service?.name ?? '',
+        customerId: appointment.customerId,
         customerEmail: appointment.customer?.email ?? '',
         customerPhone: appointment.customer?.phone ?? '',
         customerName:
           appointment.customer?.displayName ??
           appointment.customer?.email ??
           '',
+        providerId: appointment.service?.provider?.id ?? '',
         providerName: appointment.service?.provider?.displayName ?? '',
         scheduledDate: String(appointment.scheduledDate ?? ''),
         scheduledDay: appointment.scheduledDay ?? '',
@@ -538,13 +570,17 @@ export class AppointmentsService {
       {
         appointmentId: saved.id,
         status: saved.status,
+        actor: 'customer',
+        serviceId: appointment.serviceId,
         serviceName: appointment.service?.name ?? '',
+        customerId: appointment.customerId,
         customerEmail: appointment.customer?.email ?? '',
         customerPhone: appointment.customer?.phone ?? '',
         customerName:
           appointment.customer?.displayName ??
           appointment.customer?.email ??
           '',
+        providerId: appointment.service?.provider?.id ?? '',
         providerName: appointment.service?.provider?.displayName ?? '',
         scheduledDate: String(appointment.scheduledDate ?? ''),
         scheduledDay: appointment.scheduledDay ?? '',
@@ -707,13 +743,17 @@ export class AppointmentsService {
         {
           appointmentId: savedAppointment.id,
           status: savedAppointment.status,
+          actor: 'customer',
+          serviceId: savedAppointment.serviceId,
           serviceName: savedAppointment.service?.name ?? '',
+          customerId: savedAppointment.customerId,
           customerEmail: savedAppointment.customer?.email ?? '',
           customerPhone: savedAppointment.customer?.phone ?? '',
           customerName:
             savedAppointment.customer?.displayName ??
             savedAppointment.customer?.email ??
             '',
+          providerId: savedAppointment.service?.provider?.id ?? '',
           providerName: savedAppointment.service?.provider?.displayName ?? '',
           scheduledDate: String(appointmentLocked.scheduledDate ?? ''),
           scheduledDay: appointmentLocked.scheduledDay ?? '',
@@ -756,13 +796,17 @@ export class AppointmentsService {
         {
           appointmentId: appointment.id,
           status: appointment.status,
+          actor: 'system',
+          serviceId: appointment.serviceId,
           serviceName: appointment.service?.name ?? '',
+          customerId: appointment.customerId,
           customerEmail: appointment.customer?.email ?? '',
           customerPhone: appointment.customer?.phone ?? '',
           customerName:
             appointment.customer?.displayName ??
             appointment.customer?.email ??
             '',
+          providerId: appointment.service?.provider?.id ?? '',
           providerName: appointment.service?.provider?.displayName ?? '',
           scheduledDate: String(appointment.scheduledDate ?? ''),
           scheduledDay: appointment.scheduledDay ?? '',
@@ -783,6 +827,29 @@ export class AppointmentsService {
 
     payment.status = 'failed';
     await this.paymentsRepo.save(payment);
+
+    // Cenário 5: notifica morador (+ prestador opcionalmente).
+    const appointment = await this.appointmentsRepo.findOne({
+      where: { id: payment.appointmentId },
+      relations: ['customer', 'service', 'service.provider'],
+    });
+
+    if (appointment) {
+      await this.messagingService.publish(MuralEvents.PAYMENT_FAILED, {
+        appointmentId: appointment.id,
+        serviceId: appointment.serviceId,
+        serviceName: appointment.service?.name ?? '',
+        customerId: appointment.customerId,
+        customerName:
+          appointment.customer?.displayName ?? appointment.customer?.email ?? '',
+        customerEmail: appointment.customer?.email ?? '',
+        providerId: appointment.service?.provider?.id ?? '',
+        providerName: appointment.service?.provider?.displayName ?? '',
+        scheduledDate: String(appointment.scheduledDate ?? ''),
+        scheduledDay: appointment.scheduledDay ?? '',
+        scheduledTime: appointment.scheduledTime ?? '',
+      });
+    }
   }
 
   /**

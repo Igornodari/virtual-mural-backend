@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CondominiumsModule } from './condominiums/condominiums.module';
@@ -14,6 +15,9 @@ import { StripeConnectModule } from './stripe-connect/stripe-connect.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    // ScheduleModule habilita @Cron — usado pelo AppointmentReminderScheduler
+    // (Cenário 9: lembrete antes do horário).
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {

@@ -11,6 +11,7 @@ import { MockPaymentGatewayService } from './payment/mock-payment-gateway.servic
 import { StripeWebhooksController } from './webhooks/stripe-webhooks.controller';
 import { MessagingModule } from '../messaging/messaging.module';
 import { StripeConnectModule } from '../stripe-connect/stripe-connect.module';
+import { AppointmentReminderScheduler } from './schedulers/appointment-reminder.scheduler';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { StripeConnectModule } from '../stripe-connect/stripe-connect.module';
   controllers: [AppointmentsController, StripeWebhooksController],
   providers: [
     AppointmentsService,
+    AppointmentReminderScheduler,
     {
       provide: 'PAYMENT_GATEWAY',
       inject: [ConfigService],

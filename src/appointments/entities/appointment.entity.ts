@@ -66,6 +66,15 @@ export class Appointment {
   @Column()
   serviceId: string;
 
+  /**
+   * Marcação anti-duplicação para o cron de lembretes. Setado para
+   * `now()` no momento em que disparamos a primeira notificação
+   * APPOINTMENT_REMINDER para este agendamento. Garante que mesmo
+   * que o cron rode várias vezes na janela, só mandamos um lembrete.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  reminderSentAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
