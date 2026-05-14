@@ -8,6 +8,11 @@ import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
 import type { Channel, ChannelModel } from 'amqplib';
 
+type ConsumerHandler = (
+  event: string,
+  payload: Record<string, unknown>,
+) => Promise<void>;
+
 @Injectable()
 export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MessagingService.name);
@@ -15,6 +20,17 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private channel: Channel | null = null;
   private readonly queue: string;
   private readonly url: string;
+
+  /**
+   * Handlers registrados via `consume()` ANTES do canal abrir
+   * (race condition no boot: `MuralEventsConsumer.onModuleInit` pode
+   * rodar enquanto o `await amqp.connect()` ainda está pendente).
+   *
+   * Mantemos todos os handlers numa lista — quando o canal abrir
+   * (ou reabrir após reconexão), aplicamos cada um. Assim a fila
+   * volta a ser consumida automaticamente após uma queda do broker.
+   */
+  private readonly pendingHandlers: ConsumerHandler[] = [];
 
   constructor(private readonly config: ConfigService) {
     this.url = config.get<string>(
@@ -42,11 +58,18 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`✅ Conectado ao RabbitMQ — fila: "${this.queue}"`);
 
+      // Re-registra todos os consumers pendentes — cobre:
+      //   (a) consumers que tentaram registrar antes do canal abrir
+      //   (b) reconexão após queda do broker
+      await this.flushPendingHandlers();
+
       // Registra listeners para erros de conexão
       this.connection.on('error', (err) => {
         this.logger.error('Erro na conexão RabbitMQ:', (err as Error).message);
       });
       this.connection.on('close', () => {
+        this.channel = null;
+        this.connection = null;
         this.logger.warn(
           'Conexão RabbitMQ encerrada. Tentando reconectar em 5s...',
         );
@@ -102,19 +125,48 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Registra um consumidor para processar mensagens da fila.
-   * Útil para workers que precisam reagir a eventos (ex: enviar notificações).
+   *
+   * Tolerante a race condition: se o canal ainda não estiver aberto
+   * (consumer.onModuleInit pode rodar antes do amqp.connect resolver),
+   * guardamos o handler e aplicamos quando o canal abrir. O mesmo
+   * mecanismo cobre reconexão após queda do broker.
    *
    * @param handler - Função que recebe o evento e o payload
    */
-  async consume(
-    handler: (event: string, payload: Record<string, unknown>) => Promise<void>,
-  ): Promise<void> {
+  async consume(handler: ConsumerHandler): Promise<void> {
+    this.pendingHandlers.push(handler);
+
     if (!this.channel) {
-      this.logger.warn(
-        'Canal RabbitMQ indisponível. Consumidor não registrado.',
+      this.logger.log(
+        'Canal RabbitMQ ainda não aberto — consumer enfileirado e será registrado quando a conexão estiver pronta.',
       );
       return;
     }
+
+    await this.registerHandlerOnChannel(handler);
+  }
+
+  /**
+   * Aplica todos os handlers pendentes ao canal recém-aberto.
+   */
+  private async flushPendingHandlers(): Promise<void> {
+    if (!this.channel || this.pendingHandlers.length === 0) return;
+
+    for (const handler of this.pendingHandlers) {
+      try {
+        await this.registerHandlerOnChannel(handler);
+      } catch (err) {
+        this.logger.error(
+          `Falha ao registrar consumer pendente: ${(err as Error).message}`,
+        );
+      }
+    }
+  }
+
+  private async registerHandlerOnChannel(
+    handler: ConsumerHandler,
+  ): Promise<void> {
+    if (!this.channel) return;
 
     // Processa uma mensagem por vez (prefetch = 1) para garantir ordem
     await this.channel.prefetch(1);

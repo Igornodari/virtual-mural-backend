@@ -11,6 +11,7 @@ import {
   NotificationPayload,
 } from '../../notifications/entities/notification.entity';
 import { User } from '../../users/entities/user.entity';
+import { Appointment } from '../../appointments/entities/appointment.entity';
 
 /**
  * Consumidor central de eventos do Virtual Mural.
@@ -35,7 +36,28 @@ export class MuralEventsConsumer implements OnModuleInit {
     private readonly whatsApp: WhatsAppService,
     private readonly inApp: InAppNotificationsService,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
+    @InjectRepository(Appointment)
+    private readonly appointmentsRepo: Repository<Appointment>,
   ) {}
+
+  /**
+   * Executa uma chamada de canal externo (email, WhatsApp, SNS) de
+   * forma defensiva: se falhar (credenciais ausentes, rate limit,
+   * timeout), apenas loga. Importante para não fazer o RabbitMQ
+   * descartar a mensagem quando a notificação in-app já foi salva.
+   */
+  private async safeCall(
+    channel: string,
+    fn: () => Promise<void>,
+  ): Promise<void> {
+    try {
+      await fn();
+    } catch (err) {
+      this.logger.warn(
+        `Canal externo "${channel}" falhou (não bloqueia in-app): ${(err as Error).message}`,
+      );
+    }
+  }
 
   async onModuleInit(): Promise<void> {
     await this.messagingService.consume(async (event: MuralEvents, payload) => {
@@ -108,18 +130,49 @@ export class MuralEventsConsumer implements OnModuleInit {
   }
 
   /**
-   * Resolve `providerId` a partir do `serviceId` quando o payload não o
-   * carrega. Necessário porque alguns eventos antigos (status_changed)
-   * só trazem `serviceName`.
+   * Resolve `providerId` a partir do payload, com fallback via DB
+   * quando o evento antigo não traz o campo (publicado antes da
+   * refatoração). Faz lookup por `appointmentId` → service.providerId.
    */
   private async resolveProviderId(
     payload: Record<string, unknown>,
   ): Promise<string | null> {
     if (payload.providerId) return payload.providerId as string;
-    // O appointment service já carrega service.provider quando publica;
-    // se faltou, deixamos null e a notificação para o prestador é
-    // pulada nesse evento (não deve acontecer no fluxo normal).
-    return null;
+
+    const appointmentId = payload.appointmentId as string | undefined;
+    if (!appointmentId) return null;
+
+    try {
+      const appointment = await this.appointmentsRepo.findOne({
+        where: { id: appointmentId },
+        relations: ['service', 'service.provider'],
+      });
+      return appointment?.service?.provider?.id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Resolve `customerId` com fallback via DB para eventos antigos.
+   */
+  private async resolveCustomerId(
+    payload: Record<string, unknown>,
+  ): Promise<string | null> {
+    if (payload.customerId) return payload.customerId as string;
+
+    const appointmentId = payload.appointmentId as string | undefined;
+    if (!appointmentId) return null;
+
+    try {
+      const appointment = await this.appointmentsRepo.findOne({
+        where: { id: appointmentId },
+        select: ['id', 'customerId'],
+      });
+      return appointment?.customerId ?? null;
+    } catch {
+      return null;
+    }
   }
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -141,18 +194,22 @@ export class MuralEventsConsumer implements OnModuleInit {
     );
 
     // Notifica moradores do condomínio via SNS (canal externo legado).
-    await this.notifications.notifyCondominiumResidents(
-      condominiumId,
-      `Novo serviço disponível: ${serviceName}`,
-      [
-        `${providerName} acabou de publicar um novo serviço no mural do seu condomínio!`,
-        '',
-        `📋 Serviço: ${serviceName}`,
-        `🏷️  Categoria: ${category}`,
-        `💰 Preço: ${price}`,
-        '',
-        'Acesse o Mural do Condomínio para ver mais detalhes e entrar em contato.',
-      ].join('\n'),
+    // Isolado em safeCall — se AWS estiver indisponível, o canal in-app
+    // (próximo bloco) ainda completa.
+    await this.safeCall('SNS (condomínio)', () =>
+      this.notifications.notifyCondominiumResidents(
+        condominiumId,
+        `Novo serviço disponível: ${serviceName}`,
+        [
+          `${providerName} acabou de publicar um novo serviço no mural do seu condomínio!`,
+          '',
+          `📋 Serviço: ${serviceName}`,
+          `🏷️  Categoria: ${category}`,
+          `💰 Preço: ${price}`,
+          '',
+          'Acesse o Mural do Condomínio para ver mais detalhes e entrar em contato.',
+        ].join('\n'),
+      ),
     );
 
     // In-app: cria notificação para cada morador do condomínio.
@@ -220,29 +277,33 @@ export class MuralEventsConsumer implements OnModuleInit {
       });
     }
 
-    // E-mail (legado).
+    // E-mail (legado) — isolado para não derrubar o pipeline.
     if (providerEmail) {
-      await this.notifications.sendAppointmentRequestEmail(
-        providerEmail,
-        providerName,
-        customerName,
-        serviceName,
-        scheduledDay,
-        scheduledDate,
+      await this.safeCall('SES (appointment request)', () =>
+        this.notifications.sendAppointmentRequestEmail(
+          providerEmail,
+          providerName,
+          customerName,
+          serviceName,
+          scheduledDay,
+          scheduledDate,
+        ),
       );
     }
 
-    // WhatsApp (legado).
+    // WhatsApp (legado) — idem.
     if (providerPhone) {
-      await this.whatsApp.notifyProviderNewAppointment({
-        providerPhone,
-        providerName,
-        customerName,
-        serviceName,
-        scheduledDay,
-        scheduledDate,
-        scheduledTime,
-      });
+      await this.safeCall('WhatsApp (provider new appointment)', () =>
+        this.whatsApp.notifyProviderNewAppointment({
+          providerPhone,
+          providerName,
+          customerName,
+          serviceName,
+          scheduledDay,
+          scheduledDate,
+          scheduledTime,
+        }),
+      );
     }
   }
 
@@ -288,16 +349,24 @@ export class MuralEventsConsumer implements OnModuleInit {
       `[appointment.status_changed] ${appointmentId} → "${status}" (actor=${actor ?? 'unknown'}).`,
     );
 
+    // Resolve com fallback via DB — cobre eventos antigos que não
+    // traziam customerId/providerId no payload.
+    const resolvedCustomerId =
+      customerId ?? (await this.resolveCustomerId(payload));
     const providerId = await this.resolveProviderId(payload);
-    const notifyPayload = this.buildPayload(payload);
+    const notifyPayload = this.buildPayload({
+      ...payload,
+      customerId: resolvedCustomerId,
+      providerId,
+    });
     const url = `/mural/appointments?focus=${appointmentId}`;
 
     switch (status) {
       // Cenário 2 — Prestador confirma
       case 'confirmed': {
-        if (customerId) {
+        if (resolvedCustomerId) {
           await this.inApp.create({
-            recipientId: customerId,
+            recipientId: resolvedCustomerId,
             type: NotificationType.APPOINTMENT_CONFIRMED,
             payload: notifyPayload,
             actionUrl: url,
@@ -329,12 +398,12 @@ export class MuralEventsConsumer implements OnModuleInit {
             payload: notifyPayload,
             actionUrl: url,
           });
-        } else if (!cancelledByCustomer && customerId) {
+        } else if (!cancelledByCustomer && resolvedCustomerId) {
           // Quando o prestador é o actor — OU quando não temos info do
           // actor mas a transição veio do endpoint /status (sempre
           // provider). Aqui assumimos provider quando actor != customer.
           await this.inApp.create({
-            recipientId: customerId,
+            recipientId: resolvedCustomerId,
             type: NotificationType.PROVIDER_CANCELLED,
             payload: notifyPayload,
             actionUrl: url,
@@ -345,9 +414,9 @@ export class MuralEventsConsumer implements OnModuleInit {
 
       // Cenário 10 — Concluído (pede avaliação)
       case 'completed': {
-        if (customerId) {
+        if (resolvedCustomerId) {
           await this.inApp.create({
-            recipientId: customerId,
+            recipientId: resolvedCustomerId,
             type: NotificationType.APPOINTMENT_COMPLETED,
             payload: notifyPayload,
             actionUrl: `/mural/appointments?focus=${appointmentId}&review=1`,
@@ -359,9 +428,9 @@ export class MuralEventsConsumer implements OnModuleInit {
       // Cenário 3 já é tratado pelo cancellation com actor=provider
       // antes do confirm. Caso futuro de status 'rejected' explícito:
       case 'rejected': {
-        if (customerId) {
+        if (resolvedCustomerId) {
           await this.inApp.create({
-            recipientId: customerId,
+            recipientId: resolvedCustomerId,
             type: NotificationType.APPOINTMENT_REJECTED,
             payload: notifyPayload,
             actionUrl: url,
@@ -375,30 +444,30 @@ export class MuralEventsConsumer implements OnModuleInit {
         break;
     }
 
-    // ── Canais externos legados (mantidos) ─────────────────────────────────
+    // ── Canais externos legados (isolados em safeCall) ─────────────────────
     if (customerPhone) {
-      if (status === 'paid') {
-        await this.whatsApp.notifyCustomerPaymentConfirmed({
-          customerPhone,
-          customerName,
-          serviceName,
-          providerName,
-          scheduledDay,
-          scheduledDate,
-          scheduledTime,
-        });
-      } else {
-        await this.whatsApp.notifyCustomerStatusChanged({
-          customerPhone,
-          customerName,
-          serviceName,
-          providerName,
-          status,
-          scheduledDay,
-          scheduledDate,
-          scheduledTime,
-        });
-      }
+      await this.safeCall('WhatsApp (status change)', () =>
+        status === 'paid'
+          ? this.whatsApp.notifyCustomerPaymentConfirmed({
+              customerPhone,
+              customerName,
+              serviceName,
+              providerName,
+              scheduledDay,
+              scheduledDate,
+              scheduledTime,
+            })
+          : this.whatsApp.notifyCustomerStatusChanged({
+              customerPhone,
+              customerName,
+              serviceName,
+              providerName,
+              status,
+              scheduledDay,
+              scheduledDate,
+              scheduledTime,
+            }),
+      );
     }
 
     const emailStatuses = ['confirmed', 'cancelled', 'completed'];
@@ -410,23 +479,25 @@ export class MuralEventsConsumer implements OnModuleInit {
       };
       const label = statusLabels[status] ?? status;
 
-      await this.notifications.sendEmail({
-        to: [customerEmail],
-        subject: `Seu agendamento foi ${label} — ${serviceName}`,
-        bodyText: [
-          `Olá, ${customerName}!`,
-          '',
-          `Seu agendamento para o serviço "${serviceName}" com ${providerName} foi ${label}.`,
-          '',
-          status === 'confirmed'
-            ? 'O prestador confirmou o horário. Fique atento ao dia combinado!'
-            : status === 'cancelled'
-              ? 'Caso precise reagendar, acesse o Mural do Condomínio.'
-              : 'Esperamos que o serviço tenha atendido suas expectativas. Não esqueça de avaliar!',
-          '',
-          '— Equipe Virtual Mural',
-        ].join('\n'),
-      });
+      await this.safeCall('SES (status change)', () =>
+        this.notifications.sendEmail({
+          to: [customerEmail],
+          subject: `Seu agendamento foi ${label} — ${serviceName}`,
+          bodyText: [
+            `Olá, ${customerName}!`,
+            '',
+            `Seu agendamento para o serviço "${serviceName}" com ${providerName} foi ${label}.`,
+            '',
+            status === 'confirmed'
+              ? 'O prestador confirmou o horário. Fique atento ao dia combinado!'
+              : status === 'cancelled'
+                ? 'Caso precise reagendar, acesse o Mural do Condomínio.'
+                : 'Esperamos que o serviço tenha atendido suas expectativas. Não esqueça de avaliar!',
+            '',
+            '— Equipe Virtual Mural',
+          ].join('\n'),
+        }),
+      );
     }
   }
 
@@ -522,8 +593,7 @@ export class MuralEventsConsumer implements OnModuleInit {
       requesterRole?: 'customer' | 'provider';
     };
 
-    const recipient =
-      requesterRole === 'customer' ? providerId : customerId;
+    const recipient = requesterRole === 'customer' ? providerId : customerId;
     if (!recipient) return;
 
     await this.inApp.create({
@@ -547,8 +617,7 @@ export class MuralEventsConsumer implements OnModuleInit {
       requesterRole?: 'customer' | 'provider';
     };
 
-    const recipient =
-      requesterRole === 'customer' ? customerId : providerId;
+    const recipient = requesterRole === 'customer' ? customerId : providerId;
     if (!recipient) return;
 
     await this.inApp.create({
@@ -586,12 +655,14 @@ export class MuralEventsConsumer implements OnModuleInit {
     }
 
     if (providerEmail) {
-      await this.notifications.sendReviewNotificationEmail(
-        providerEmail,
-        providerName,
-        authorName,
-        serviceName,
-        rating,
+      await this.safeCall('SES (review)', () =>
+        this.notifications.sendReviewNotificationEmail(
+          providerEmail,
+          providerName,
+          authorName,
+          serviceName,
+          rating,
+        ),
       );
     }
   }
