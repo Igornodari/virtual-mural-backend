@@ -11,12 +11,11 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { AppointmentsService } from './appointments.service';
+import { AppointmentsService } from './services/appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
 import { CreateAppointmentPaymentDto } from './dto/create-appointment-payment.dto';
 import { User } from '../users/entities/user.entity';
-
 @ApiTags('appointments')
 @ApiBearerAuth('cognito-jwt')
 @UseGuards(JwtAuthGuard)
