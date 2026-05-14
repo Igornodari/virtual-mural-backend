@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationsService } from './notifications.service';
 import { WhatsAppService } from './whatsapp.service';

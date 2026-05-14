@@ -1,9 +1,27 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import type { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ExtractJwt, Strategy, JwtFromRequestFunction } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import { UsersService } from '../../users/users.service';
+
+/**
+ * Extrai o token também do query param `access_token` — necessário para
+ * o endpoint SSE `/notifications/stream`, já que o navegador não envia
+ * headers customizados via EventSource.
+ *
+ * Tentamos Authorization Bearer primeiro (padrão), depois o query param.
+ */
+const idTokenFromQueryOrHeader: JwtFromRequestFunction = (req: Request) => {
+  const fromHeader = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+  if (fromHeader) return fromHeader;
+
+  const q = (req?.query?.access_token ?? req?.query?.id_token) as
+    | string
+    | undefined;
+  return typeof q === 'string' && q.length > 0 ? q : null;
+};
 
 export interface CognitoJwtPayload {
   sub: string;
@@ -33,7 +51,7 @@ export class CognitoJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const issuer = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`;
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: idTokenFromQueryOrHeader,
       ignoreExpiration: false,
       audience: clientId,
       issuer,
