@@ -99,7 +99,11 @@ export class MuralEventsConsumer implements OnModuleInit {
           break;
 
         default:
-          this.logger.warn(`Evento desconhecido recebido: ${event}`);
+          // `event` foi exaurido pelo switch — em runtime pode ainda
+          // chegar uma string nova adicionada por outro serviço, então
+          // logamos via String() para evitar erro de template literal
+          // com tipo `never`.
+          this.logger.warn(`Evento desconhecido recebido: ${String(event)}`);
       }
     });
   }
@@ -507,16 +511,17 @@ export class MuralEventsConsumer implements OnModuleInit {
   private async onPaymentFailed(
     payload: Record<string, unknown>,
   ): Promise<void> {
-    const { customerId, providerId } = payload as {
+    const { customerId, providerId, appointmentId } = payload as {
       customerId?: string;
       providerId?: string;
+      appointmentId?: string;
     };
 
     this.logger.log('[payment.failed] notificando partes envolvidas.');
 
     const notifyPayload = this.buildPayload(payload);
-    const actionUrl = payload.appointmentId
-      ? `/mural/appointments?focus=${payload.appointmentId}&retry-payment=1`
+    const actionUrl = appointmentId
+      ? `/mural/appointments?focus=${appointmentId}&retry-payment=1`
       : null;
 
     if (customerId) {
@@ -534,8 +539,8 @@ export class MuralEventsConsumer implements OnModuleInit {
         recipientId: providerId,
         type: NotificationType.PAYMENT_PENDING_PROVIDER,
         payload: notifyPayload,
-        actionUrl: payload.appointmentId
-          ? `/mural/appointments?focus=${payload.appointmentId}`
+        actionUrl: appointmentId
+          ? `/mural/appointments?focus=${appointmentId}`
           : null,
       });
     }
@@ -547,14 +552,15 @@ export class MuralEventsConsumer implements OnModuleInit {
   private async onAppointmentReminder(
     payload: Record<string, unknown>,
   ): Promise<void> {
-    const { customerId, providerId } = payload as {
+    const { customerId, providerId, appointmentId } = payload as {
       customerId?: string;
       providerId?: string;
+      appointmentId?: string;
     };
 
     const notifyPayload = this.buildPayload(payload);
-    const actionUrl = payload.appointmentId
-      ? `/mural/appointments?focus=${payload.appointmentId}`
+    const actionUrl = appointmentId
+      ? `/mural/appointments?focus=${appointmentId}`
       : null;
 
     const inputs = [];
