@@ -21,11 +21,26 @@ export interface CognitoUserData {
   cognitoUsername?: string;
 }
 
-/**
- * Status considerados "abertos" para fins de bloqueio da desativação do
- * modo prestador. Se houver QUALQUER agendamento nesses status no serviço
- * do usuário, ele não pode desativar.
- */
+export interface UserExportData {
+  id: string;
+  email: string;
+  givenName: string | null;
+  familyName: string | null;
+  displayName: string | null;
+  phone: string | null;
+  avatarUrl: string | null;
+  authProvider: string;
+  isProvider: boolean;
+  onboardingCompleted: boolean;
+  condominiumId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  exportedAt: string;
+  services: Array<{ id: string; name: string; category: string; createdAt: Date }>;
+  appointments: Array<{ id: string; status: string; scheduledDate: Date; createdAt: Date }>;
+  totalReviews: number;
+}
+
 const OPEN_APPOINTMENT_STATUSES = [
   'pending',
   'confirmed',
@@ -98,18 +113,12 @@ export class UsersService {
     }
 
     if (dto.isProvider !== undefined) {
-      // Bloqueia a desativação se houver serviço ativo ou agendamento
-      // em aberto. Evita o cenário em que o prestador "some" no meio de
-      // uma operação ativa (cliente continuaria com o agendamento mas
-      // sem dono do serviço acessível).
       if (dto.isProvider === false && user.isProvider === true) {
         await this.assertCanDeactivateProvider(userId);
       }
       user.isProvider = dto.isProvider;
     }
 
-    // Onboarding agora considera apenas o vínculo com condomínio. Ser
-    // prestador é opt-in pós-onboarding e não trava o acesso ao app.
     user.onboardingCompleted = user.addressCompleted;
     return this.usersRepo.save(user);
   }
@@ -118,12 +127,6 @@ export class UsersService {
     return this.usersRepo.find({ where: { condominiumId } });
   }
 
-  /**
-   * Lança se o usuário não puder desativar o modo prestador.
-   * Critérios:
-   *  - Nenhum serviço ativo (isActive=true).
-   *  - Nenhum agendamento nos status "abertos" em qualquer dos seus serviços.
-   */
   async assertCanDeactivateProvider(userId: string): Promise<void> {
     const activeServiceCount = await this.servicesRepo.count({
       where: { providerId: userId, isActive: true },
@@ -150,5 +153,79 @@ export class UsersService {
           'Conclua ou cancele antes de desativar o modo prestador.',
       );
     }
+  }
+
+  /**
+   * LGPD — Direito ao esquecimento (Art. 18, IV da Lei 13.709/2018)
+   * Anonimiza todos os dados pessoais do usuário sem remover o registro,
+   * preservando a integridade referencial do banco (agendamentos, reviews).
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.findById(userId);
+
+    // Verificar se pode desativar prestador (se for prestador)
+    if (user.isProvider) {
+      await this.assertCanDeactivateProvider(userId);
+    }
+
+    // Anonimização: substituir dados pessoais por valores neutros
+    const anonymizedAt = new Date().toISOString();
+    user.email = `deleted_${user.id}@anonymous.virtual-mural.com`;
+    user.givenName = 'Usuário';
+    user.familyName = 'Removido';
+    user.displayName = 'Usuário Removido';
+    user.phone = null;
+    user.avatarUrl = null;
+    user.cognitoSub = `deleted_${user.id}_${anonymizedAt}`;
+    user.cognitoUsername = null;
+    user.stripeAccountId = null;
+    user.stripeAccountStatus = null;
+    user.isProvider = false;
+    user.onboardingCompleted = false;
+
+    await this.usersRepo.save(user);
+  }
+
+  /**
+   * LGPD — Direito de acesso (Art. 18, I da Lei 13.709/2018)
+   * Retorna todos os dados pessoais do usuário em formato exportável.
+   */
+  async exportData(userId: string): Promise<UserExportData> {
+    const user = await this.usersRepo.findOne({
+      where: { id: userId },
+      relations: ['services', 'appointments'],
+    });
+
+    if (!user) throw new NotFoundException(`Usuário ${userId} não encontrado.`);
+
+    return {
+      id: user.id,
+      email: user.email,
+      givenName: user.givenName ?? null,
+      familyName: user.familyName ?? null,
+      displayName: user.displayName ?? null,
+      phone: user.phone ?? null,
+      avatarUrl: user.avatarUrl ?? null,
+      authProvider: user.authProvider,
+      isProvider: user.isProvider,
+      onboardingCompleted: user.onboardingCompleted,
+      condominiumId: user.condominiumId,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      exportedAt: new Date().toISOString(),
+      services: (user.services ?? []).map((s) => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        createdAt: s.createdAt,
+      })),
+      appointments: (user.appointments ?? []).map((a) => ({
+        id: a.id,
+        status: a.status,
+        scheduledDate: a.scheduledDate,
+        createdAt: a.createdAt,
+      })),
+      totalReviews: user.reviews?.length ?? 0,
+    };
   }
 }
