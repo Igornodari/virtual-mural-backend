@@ -4,7 +4,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter, AllExceptionsFilter } from './common/filters/http-exception.filter';
+import {
+  HttpExceptionFilter,
+  AllExceptionsFilter,
+} from './common/filters/http-exception.filter';
 import { ThrottleExceptionFilter } from './common/filters/throttle-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
@@ -14,7 +17,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
-    logger: isDev ? ['error', 'warn', 'log', 'debug'] : ['error', 'warn', 'log'],
+    logger: isDev
+      ? ['error', 'warn', 'log', 'debug']
+      : ['error', 'warn', 'log'],
   });
 
   // ── Segurança: headers HTTP ───────────────────────────────────────────────
@@ -30,11 +35,16 @@ async function bootstrap() {
 
   app.use('/health', (_req: any, res: any) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+    res.end(
+      JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }),
+    );
   });
 
   // Webhook Stripe precisa do raw body para validação de assinatura
-  app.use('/api/v1/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
+  app.use(
+    '/api/v1/stripe/webhook',
+    bodyParser.raw({ type: 'application/json' }),
+  );
   app.use(bodyParser.json({ limit: '1mb' }));
   app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 
@@ -44,7 +54,10 @@ async function bootstrap() {
     .map((o) => o.trim());
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -67,7 +80,11 @@ async function bootstrap() {
   );
 
   // ── Filtros e interceptors globais ────────────────────────────────────────
-  app.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter(), new ThrottleExceptionFilter());
+  app.useGlobalFilters(
+    new AllExceptionsFilter(),
+    new HttpExceptionFilter(),
+    new ThrottleExceptionFilter(),
+  );
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   // ── Swagger (apenas fora de produção) ─────────────────────────────────────

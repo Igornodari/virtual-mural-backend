@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CondominiumsController } from './condominiums.controller';
 import { CondominiumsService } from './condominiums.service';
 import { Condominium } from './entities/condominium.entity';
-import { beforeEach, describe } from 'node:test';
 
 const mockCondo = (): Condominium =>
   ({

@@ -37,7 +37,7 @@ export interface UserExportData {
   updatedAt: Date;
   exportedAt: string;
   services: Array<{ id: string; name: string; category: string; createdAt: Date }>;
-  appointments: Array<{ id: string; status: string; scheduledDate: Date; createdAt: Date }>;
+  appointments: Array<{ id: string; status: string; scheduledDate: string; createdAt: Date }>;
   totalReviews: number;
 }
 
