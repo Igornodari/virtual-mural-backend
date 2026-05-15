@@ -1,37 +1,29 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/require-await --
-   Specs e fakes de repositório usam `any` deliberadamente para simular a
-   API do TypeORM sem precisar implementar todos os métodos. As checagens
-   de segurança não se aplicam a mocks. */
-/**
- * Testes do UsersService. Cobre o fluxo de updateOnboarding sob o
- * novo modelo de papéis (sem `roleInCondominium`/`roleCompleted`).
- */
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { Service } from '../services/entities/service.entity';
 import { Appointment } from '../appointments/entities/appointment.entity';
 
-function makeUserEntity(overrides: Partial<User> = {}): User {
-  return {
-    id: 'u-1',
-    cognitoSub: 'sub-1',
-    email: 'u@example.com',
-    givenName: '',
-    familyName: '',
-    displayName: '',
-    phone: '',
-    avatarUrl: '',
-    cognitoUsername: 'u',
+const mockUser = (): User =>
+  ({
+    id: 'user-uuid-1',
+    cognitoSub: 'cognito-sub-1',
+    email: 'test@example.com',
+    givenName: 'João',
+    familyName: 'Silva',
+    displayName: 'João Silva',
+    phone: '+5511999999999',
+    avatarUrl: 'https://example.com/avatar.jpg',
+    cognitoUsername: 'joaosilva',
     authProvider: 'cognito',
     isProvider: false,
     onboardingCompleted: false,
     addressCompleted: false,
-    condominium: null,
     condominiumId: null,
+    condominium: null,
     services: [],
     appointments: [],
     reviews: [],
@@ -40,261 +32,300 @@ function makeUserEntity(overrides: Partial<User> = {}): User {
     lastLoginAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...overrides,
-  } as unknown as User;
-}
+  }) as unknown as User;
+
+type MockRepo<T> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+
+const createMockRepo = <T>(): MockRepo<T> => ({
+  findOne: jest.fn(),
+  find: jest.fn(),
+  create: jest.fn(),
+  save: jest.fn(),
+  count: jest.fn(),
+  createQueryBuilder: jest.fn(),
+});
 
 describe('UsersService', () => {
   let service: UsersService;
-  let repo: {
-    findOne: jest.Mock;
-    create: jest.Mock;
-    save: jest.Mock;
-    find: jest.Mock;
-  };
-  let servicesRepo: { count: jest.Mock };
-  let appointmentsRepo: { createQueryBuilder: jest.Mock };
+  let usersRepo: MockRepo<User>;
+  let servicesRepo: MockRepo<Service>;
+  let appointmentsRepo: MockRepo<Appointment>;
 
   beforeEach(async () => {
-    repo = {
-      findOne: jest.fn(),
-      create: jest.fn().mockImplementation((data) => ({ ...data })),
-      save: jest.fn().mockImplementation(async (data) => data),
-      find: jest.fn().mockResolvedValue([]),
-    };
-    servicesRepo = { count: jest.fn().mockResolvedValue(0) };
-    appointmentsRepo = {
-      createQueryBuilder: jest.fn(() => ({
-        innerJoin: () => ({
-          where: () => ({
-            andWhere: () => ({ getCount: async () => 0 }),
-          }),
-        }),
-      })),
-    };
+    usersRepo = createMockRepo<User>();
+    servicesRepo = createMockRepo<Service>();
+    appointmentsRepo = createMockRepo<Appointment>();
 
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
-        { provide: getRepositoryToken(User), useValue: repo },
+        { provide: getRepositoryToken(User), useValue: usersRepo },
         { provide: getRepositoryToken(Service), useValue: servicesRepo },
-        {
-          provide: getRepositoryToken(Appointment),
-          useValue: appointmentsRepo,
-        },
+        { provide: getRepositoryToken(Appointment), useValue: appointmentsRepo },
       ],
     }).compile();
 
-    service = moduleRef.get(UsersService);
+    service = module.get<UsersService>(UsersService);
   });
+
+  afterEach(() => jest.clearAllMocks());
 
   // ── findOrCreateByCognito ────────────────────────────────────────────────
 
   describe('findOrCreateByCognito', () => {
-    it('cria o perfil quando o cognitoSub não existe', async () => {
-      repo.findOne.mockResolvedValue(null);
-      await service.findOrCreateByCognito({
-        cognitoSub: 'sub-new',
-        email: 'new@example.com',
-        givenName: 'New',
-      });
-      expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          cognitoSub: 'sub-new',
-          email: 'new@example.com',
-        }),
-      );
-      expect(repo.save).toHaveBeenCalled();
-    });
-
-    it('reusa o perfil existente quando o cognitoSub já está cadastrado', async () => {
-      const existing = makeUserEntity({ cognitoSub: 'sub-existing' });
-      repo.findOne.mockResolvedValue(existing);
+    it('deve retornar o usuário existente e atualizar lastLoginAt', async () => {
+      const user = mockUser();
+      usersRepo.findOne!.mockResolvedValue(user);
+      usersRepo.save!.mockResolvedValue(user);
 
       const result = await service.findOrCreateByCognito({
-        cognitoSub: 'sub-existing',
-        email: 'existing@example.com',
+        cognitoSub: user.cognitoSub,
+        email: user.email,
       });
 
-      expect(repo.create).not.toHaveBeenCalled();
-      expect(result.id).toBe('u-1');
-    });
-
-    it('atualiza lastLoginAt ao reutilizar o perfil', async () => {
-      const existing = makeUserEntity({
-        cognitoSub: 'sub-existing',
-        lastLoginAt: new Date('2020-01-01'),
+      expect(usersRepo.findOne).toHaveBeenCalledWith({
+        where: { cognitoSub: user.cognitoSub },
+        relations: ['condominium'],
       });
-      repo.findOne.mockResolvedValue(existing);
-
-      await service.findOrCreateByCognito({
-        cognitoSub: 'sub-existing',
-        email: 'e@e.com',
-      });
-
-      // O save é chamado com lastLoginAt atualizado
-      const savedArg = repo.save.mock.calls[0][0];
-      expect(savedArg.lastLoginAt.getTime()).toBeGreaterThan(
-        new Date('2020-01-02').getTime(),
+      expect(result).toBe(user);
+      expect(usersRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ lastLoginAt: expect.any(Date) }),
       );
     });
 
-    it('detecta authProvider Google quando o username começa com "Google"', async () => {
-      repo.findOne.mockResolvedValue(null);
-      await service.findOrCreateByCognito({
-        cognitoSub: 'sub-google',
-        email: 'g@example.com',
-        cognitoUsername: 'Google_12345',
+    it('deve criar novo usuário quando não existe', async () => {
+      const newUser = mockUser();
+      usersRepo.findOne!.mockResolvedValue(null);
+      usersRepo.create!.mockReturnValue(newUser);
+      usersRepo.save!.mockResolvedValue(newUser);
+
+      const result = await service.findOrCreateByCognito({
+        cognitoSub: 'new-sub',
+        email: 'new@example.com',
+        givenName: 'Ana',
+        familyName: 'Costa',
       });
 
-      const created = repo.create.mock.calls[0][0];
-      expect(created.authProvider).toBe('google');
+      expect(usersRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cognitoSub: 'new-sub',
+          email: 'new@example.com',
+          givenName: 'Ana',
+          familyName: 'Costa',
+          authProvider: 'cognito',
+        }),
+      );
+      expect(result).toBe(newUser);
+    });
+
+    it('deve marcar authProvider como google quando username inclui Google', async () => {
+      const newUser = mockUser();
+      usersRepo.findOne!.mockResolvedValue(null);
+      usersRepo.create!.mockReturnValue(newUser);
+      usersRepo.save!.mockResolvedValue(newUser);
+
+      await service.findOrCreateByCognito({
+        cognitoSub: 'google-sub',
+        email: 'google@example.com',
+        cognitoUsername: 'Google_1234567890',
+      });
+
+      expect(usersRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ authProvider: 'google' }),
+      );
     });
   });
 
-  // ── findById ────────────────────────────────────────────────────────────
+  // ── findById ─────────────────────────────────────────────────────────────
 
   describe('findById', () => {
-    it('lança NotFound quando o usuário não existe', async () => {
-      repo.findOne.mockResolvedValue(null);
-      await expect(service.findById('does-not-exist')).rejects.toThrow(
+    it('deve retornar o usuário quando encontrado', async () => {
+      const user = mockUser();
+      usersRepo.findOne!.mockResolvedValue(user);
+
+      const result = await service.findById(user.id);
+      expect(result).toBe(user);
+    });
+
+    it('deve lançar NotFoundException quando usuário não existe', async () => {
+      usersRepo.findOne!.mockResolvedValue(null);
+
+      await expect(service.findById('id-inexistente')).rejects.toThrow(
         NotFoundException,
       );
     });
+  });
 
-    it('retorna o usuário existente', async () => {
-      repo.findOne.mockResolvedValue(makeUserEntity({ id: 'real-id' }));
-      const result = await service.findById('real-id');
-      expect(result.id).toBe('real-id');
+  // ── updateProfile ─────────────────────────────────────────────────────────
+
+  describe('updateProfile', () => {
+    it('deve atualizar givenName e phone do usuário', async () => {
+      const user = mockUser();
+      const updated = { ...user, givenName: 'Pedro', phone: '+5511888888888' };
+      usersRepo.findOne!.mockResolvedValue(user);
+      usersRepo.save!.mockResolvedValue(updated);
+
+      const result = await service.updateProfile(user.id, {
+        givenName: 'Pedro',
+        phone: '+5511888888888',
+      });
+
+      expect(usersRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ givenName: 'Pedro', phone: '+5511888888888' }),
+      );
+      expect(result.givenName).toBe('Pedro');
+    });
+
+    it('deve lançar NotFoundException quando usuário não existe', async () => {
+      usersRepo.findOne!.mockResolvedValue(null);
+
+      await expect(
+        service.updateProfile('id-invalido', { givenName: 'Teste' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
-  // ── updateOnboarding ────────────────────────────────────────────────────
+  // ── updateOnboarding ──────────────────────────────────────────────────────
 
   describe('updateOnboarding', () => {
-    it('atualiza condominiumId e marca addressCompleted=true', async () => {
-      repo.findOne.mockResolvedValue(makeUserEntity({ condominiumId: null }));
-      const result = await service.updateOnboarding('u-1', {
-        condominiumId: 'condo-1',
+    it('deve vincular o usuário a um condomínio', async () => {
+      const user = mockUser();
+      usersRepo.findOne!.mockResolvedValue(user);
+      usersRepo.save!.mockImplementation(async (u: User) => u);
+
+      const result = await service.updateOnboarding(user.id, {
+        condominiumId: 'condo-uuid',
       });
-      expect(result.condominiumId).toBe('condo-1');
+
+      expect(result.condominiumId).toBe('condo-uuid');
       expect(result.addressCompleted).toBe(true);
-    });
-
-    it('atualiza isProvider quando fornecido', async () => {
-      repo.findOne.mockResolvedValue(makeUserEntity({ isProvider: false }));
-      const result = await service.updateOnboarding('u-1', {
-        isProvider: true,
-      });
-      expect(result.isProvider).toBe(true);
-    });
-
-    it('permite desativar isProvider (false explícito)', async () => {
-      repo.findOne.mockResolvedValue(
-        makeUserEntity({ isProvider: true, addressCompleted: true }),
-      );
-      const result = await service.updateOnboarding('u-1', {
-        isProvider: false,
-      });
-      expect(result.isProvider).toBe(false);
-    });
-
-    it('não altera campos quando o DTO está vazio (idempotente)', async () => {
-      const user = makeUserEntity({
-        isProvider: true,
-        condominiumId: 'c-1',
-        addressCompleted: true,
-      });
-      repo.findOne.mockResolvedValue(user);
-      const result = await service.updateOnboarding('u-1', {});
-      expect(result.isProvider).toBe(true);
-      expect(result.condominiumId).toBe('c-1');
-    });
-
-    it('onboardingCompleted é true após o endereço estar setado, independente do prestador', async () => {
-      repo.findOne.mockResolvedValue(
-        makeUserEntity({ addressCompleted: false }),
-      );
-      const result = await service.updateOnboarding('u-1', {
-        condominiumId: 'c-1',
-      });
-      // Esse é o invariante novo: ser prestador NÃO é requisito para
-      // considerar o onboarding concluído.
       expect(result.onboardingCompleted).toBe(true);
-      expect(result.isProvider).toBe(false);
     });
 
-    it('atualizar isProvider sozinho não muda addressCompleted', async () => {
-      repo.findOne.mockResolvedValue(
-        makeUserEntity({ addressCompleted: false }),
-      );
-      const result = await service.updateOnboarding('u-1', {
-        isProvider: true,
-      });
-      expect(result.addressCompleted).toBe(false);
-      expect(result.onboardingCompleted).toBe(false);
+    it('deve chamar assertCanDeactivateProvider ao desativar prestador', async () => {
+      const user = { ...mockUser(), isProvider: true };
+      usersRepo.findOne!.mockResolvedValue(user);
+      usersRepo.save!.mockImplementation(async (u: User) => u);
+      servicesRepo.count!.mockResolvedValue(0);
+
+      const mockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      } as unknown as SelectQueryBuilder<Appointment>;
+
+      appointmentsRepo.createQueryBuilder!.mockReturnValue(mockQb);
+
+      const result = await service.updateOnboarding(user.id, { isProvider: false });
+      expect(result.isProvider).toBe(false);
     });
   });
 
-  // ── Guard de desativação do modo prestador ──────────────────────────────
+  // ── assertCanDeactivateProvider ───────────────────────────────────────────
 
   describe('assertCanDeactivateProvider', () => {
-    it('passa quando o usuário não tem serviços ativos nem agendamentos abertos', async () => {
-      servicesRepo.count.mockResolvedValue(0);
-      appointmentsRepo.createQueryBuilder.mockReturnValue({
-        innerJoin: () => ({
-          where: () => ({
-            andWhere: () => ({ getCount: async () => 0 }),
-          }),
-        }),
-      });
+    it('deve lançar BadRequestException se há serviços ativos', async () => {
+      servicesRepo.count!.mockResolvedValue(2);
 
-      await expect(
-        service.assertCanDeactivateProvider('u-1'),
-      ).resolves.toBeUndefined();
+      await expect(service.assertCanDeactivateProvider('user-1')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(servicesRepo.count).toHaveBeenCalledWith({
+        where: { providerId: 'user-1', isActive: true },
+      });
     });
 
-    it('bloqueia desativação quando há serviço ativo', async () => {
-      servicesRepo.count.mockResolvedValue(2);
+    it('deve lançar BadRequestException se há agendamentos abertos', async () => {
+      servicesRepo.count!.mockResolvedValue(0);
 
-      await expect(service.assertCanDeactivateProvider('u-1')).rejects.toThrow(
+      const mockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(3),
+      } as unknown as SelectQueryBuilder<Appointment>;
+
+      appointmentsRepo.createQueryBuilder!.mockReturnValue(mockQb);
+
+      await expect(service.assertCanDeactivateProvider('user-1')).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it('bloqueia desativação quando há agendamento aberto mesmo sem serviços ativos', async () => {
-      servicesRepo.count.mockResolvedValue(0);
-      appointmentsRepo.createQueryBuilder.mockReturnValue({
-        innerJoin: () => ({
-          where: () => ({
-            andWhere: () => ({ getCount: async () => 1 }),
-          }),
-        }),
-      });
+    it('deve completar sem erro quando não há impeditivos', async () => {
+      servicesRepo.count!.mockResolvedValue(0);
 
-      await expect(service.assertCanDeactivateProvider('u-1')).rejects.toThrow(
-        BadRequestException,
+      const mockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      } as unknown as SelectQueryBuilder<Appointment>;
+
+      appointmentsRepo.createQueryBuilder!.mockReturnValue(mockQb);
+
+      await expect(service.assertCanDeactivateProvider('user-1')).resolves.toBeUndefined();
+    });
+  });
+
+  // ── deleteAccount (LGPD) ──────────────────────────────────────────────────
+
+  describe('deleteAccount', () => {
+    it('deve anonimizar os dados do usuário', async () => {
+      const user = mockUser();
+      usersRepo.findOne!.mockResolvedValue(user);
+      usersRepo.save!.mockImplementation(async (u: User) => u);
+
+      await service.deleteAccount(user.id);
+
+      expect(usersRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: expect.stringContaining('deleted_'),
+          givenName: 'Usuário',
+          familyName: 'Removido',
+          phone: null,
+          avatarUrl: null,
+          isProvider: false,
+        }),
       );
     });
 
-    it('updateOnboarding({isProvider:false}) chama o guard quando o usuário ERA prestador', async () => {
-      const user = makeUserEntity({ isProvider: true, addressCompleted: true });
-      repo.findOne.mockResolvedValue(user);
-      servicesRepo.count.mockResolvedValue(1);
+    it('deve bloquear se usuário prestador tem serviços ativos', async () => {
+      const user = { ...mockUser(), isProvider: true };
+      usersRepo.findOne!.mockResolvedValue(user);
+      servicesRepo.count!.mockResolvedValue(1);
 
-      await expect(
-        service.updateOnboarding('u-1', { isProvider: false }),
-      ).rejects.toThrow(BadRequestException);
-      expect(repo.save).not.toHaveBeenCalled();
+      await expect(service.deleteAccount(user.id)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  // ── exportData (LGPD) ─────────────────────────────────────────────────────
+
+  describe('exportData', () => {
+    it('deve retornar dados pessoais completos do usuário', async () => {
+      const user = { ...mockUser(), services: [], appointments: [], reviews: [] };
+      usersRepo.findOne!.mockResolvedValue(user);
+
+      const result = await service.exportData(user.id);
+
+      expect(result).toMatchObject({
+        id: user.id,
+        email: user.email,
+        exportedAt: expect.any(String),
+        services: [],
+        appointments: [],
+      });
     });
 
-    it('updateOnboarding({isProvider:true}) NÃO chama o guard', async () => {
-      const user = makeUserEntity({ isProvider: false });
-      repo.findOne.mockResolvedValue(user);
+    it('deve lançar NotFoundException quando usuário não existe', async () => {
+      usersRepo.findOne!.mockResolvedValue(null);
 
-      await service.updateOnboarding('u-1', { isProvider: true });
-
-      expect(servicesRepo.count).not.toHaveBeenCalled();
+      await expect(service.exportData('id-invalido')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

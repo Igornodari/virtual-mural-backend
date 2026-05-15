@@ -26,23 +26,23 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ nullable: true })
-  givenName: string;
+  @Column({ type: 'varchar', nullable: true })
+  givenName: string | null;
 
-  @Column({ nullable: true })
-  familyName: string;
+  @Column({ type: 'varchar', nullable: true })
+  familyName: string | null;
 
-  @Column({ nullable: true })
-  displayName: string;
+  @Column({ type: 'varchar', nullable: true })
+  displayName: string | null;
 
-  @Column({ nullable: true })
-  phone: string;
+  @Column({ type: 'varchar', nullable: true })
+  phone: string | null;
 
-  @Column({ nullable: true })
-  avatarUrl: string;
+  @Column({ type: 'varchar', nullable: true })
+  avatarUrl: string | null;
 
-  @Column({ nullable: true })
-  cognitoUsername: string;
+  @Column({ type: 'varchar', nullable: true })
+  cognitoUsername: string | null;
 
   @Column({
     type: 'enum',
