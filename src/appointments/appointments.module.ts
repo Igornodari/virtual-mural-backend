@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Appointment } from './entities/appointment.entity';
 import { Payment } from './entities/payment.entity';
 import { Service } from '../services/entities/service.entity';
-import { AppointmentsService } from './appointments.service';
+import { AppointmentsService } from './services/appointments.service';
 import { AppointmentsController } from './appointments.controller';
 import { StripePaymentGatewayService } from './payment/stripe-payment-gateway.service';
 import { MockPaymentGatewayService } from './payment/mock-payment-gateway.service';
@@ -12,6 +12,12 @@ import { StripeWebhooksController } from './webhooks/stripe-webhooks.controller'
 import { MessagingModule } from '../messaging/messaging.module';
 import { StripeConnectModule } from '../stripe-connect/stripe-connect.module';
 import { AppointmentReminderScheduler } from './schedulers/appointment-reminder.scheduler';
+import { AppointmentAvailabilityService } from './services/appointment-availability.service';
+import { AppointmentCreationService } from './services/appointment-creation.service';
+import { AppointmentNotificationService } from './services/appointment-notification.service';
+import { AppointmentPaymentService } from './services/appointment-payment.service';
+import { AppointmentQueryService } from './services/appointment-query.service';
+import { AppointmentStatusService } from './services/appointment-status.service';
 
 @Module({
   imports: [
@@ -23,6 +29,12 @@ import { AppointmentReminderScheduler } from './schedulers/appointment-reminder.
   providers: [
     AppointmentsService,
     AppointmentReminderScheduler,
+    AppointmentCreationService,
+    AppointmentQueryService,
+    AppointmentAvailabilityService,
+    AppointmentStatusService,
+    AppointmentPaymentService,
+    AppointmentNotificationService,
     {
       provide: 'PAYMENT_GATEWAY',
       inject: [ConfigService],

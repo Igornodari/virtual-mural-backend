@@ -1,7 +1,7 @@
 import { Controller, HttpCode, Post, Res, Req, Logger } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import Stripe from 'stripe';
-import { AppointmentsService } from '../appointments.service';
+import { AppointmentsService } from '../services/appointments.service';
 import { StripeConnectService } from '../../stripe-connect/stripe-connect.service';
 import { ConfigService } from '@nestjs/config';
 
