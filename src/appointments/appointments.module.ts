@@ -11,6 +11,7 @@ import { MockPaymentGatewayService } from './payment/mock-payment-gateway.servic
 import { StripeWebhooksController } from './webhooks/stripe-webhooks.controller';
 import { MessagingModule } from '../messaging/messaging.module';
 import { StripeConnectModule } from '../stripe-connect/stripe-connect.module';
+import { AppointmentReminderScheduler } from './schedulers/appointment-reminder.scheduler';
 import { AppointmentAvailabilityService } from './services/appointment-availability.service';
 import { AppointmentCreationService } from './services/appointment-creation.service';
 import { AppointmentNotificationService } from './services/appointment-notification.service';
@@ -27,6 +28,7 @@ import { AppointmentStatusService } from './services/appointment-status.service'
   controllers: [AppointmentsController, StripeWebhooksController],
   providers: [
     AppointmentsService,
+    AppointmentReminderScheduler,
     AppointmentCreationService,
     AppointmentQueryService,
     AppointmentAvailabilityService,
