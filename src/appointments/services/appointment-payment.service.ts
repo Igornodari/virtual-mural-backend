@@ -401,15 +401,23 @@ export class AppointmentPaymentService {
         continue;
       }
 
-      const session = await this.stripe.checkout.sessions.retrieve(
-        payment.checkoutSessionId,
-      );
+      try {
+        const session = await this.stripe.checkout.sessions.retrieve(
+          payment.checkoutSessionId,
+        );
 
-      if (session.payment_status === 'paid') {
-        await this.handleStripeCheckoutSessionCompleted({
-          appointmentId: payment.appointmentId,
-          sessionId: payment.checkoutSessionId,
-        });
+        if (session.payment_status === 'paid') {
+          await this.handleStripeCheckoutSessionCompleted({
+            appointmentId: payment.appointmentId,
+            sessionId: payment.checkoutSessionId,
+          });
+        }
+      } catch (err) {
+        this.logger.warn(
+          `[syncPendingPaymentsForCustomer] Sessão ${payment.checkoutSessionId} não encontrada no Stripe — marcando como failed`,
+        );
+        payment.status = 'failed';
+        await this.paymentsRepo.save(payment);
       }
     }
   }
@@ -439,15 +447,23 @@ export class AppointmentPaymentService {
         continue;
       }
 
-      const session = await this.stripe.checkout.sessions.retrieve(
-        payment.checkoutSessionId,
-      );
+      try {
+        const session = await this.stripe.checkout.sessions.retrieve(
+          payment.checkoutSessionId,
+        );
 
-      if (session.payment_status === 'paid') {
-        await this.handleStripeCheckoutSessionCompleted({
-          appointmentId: payment.appointmentId,
-          sessionId: payment.checkoutSessionId,
-        });
+        if (session.payment_status === 'paid') {
+          await this.handleStripeCheckoutSessionCompleted({
+            appointmentId: payment.appointmentId,
+            sessionId: payment.checkoutSessionId,
+          });
+        }
+      } catch (err) {
+        this.logger.warn(
+          `[syncPendingPaymentsForProvider] Sessão ${payment.checkoutSessionId} não encontrada no Stripe — marcando como failed`,
+        );
+        payment.status = 'failed';
+        await this.paymentsRepo.save(payment);
       }
     }
   }
