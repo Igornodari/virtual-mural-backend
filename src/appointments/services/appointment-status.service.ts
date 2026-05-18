@@ -92,7 +92,10 @@ export class AppointmentStatusService {
 
     const saved = await this.appointmentsRepo.save(appointment);
 
-    await this.notificationService.publishAppointmentStatusChanged(saved);
+    await this.notificationService.publishAppointmentStatusChanged(
+      saved,
+      'provider',
+    );
 
     return saved;
   }
@@ -120,7 +123,10 @@ export class AppointmentStatusService {
 
     const saved = await this.appointmentsRepo.save(appointment);
 
-    await this.notificationService.publishAppointmentStatusChanged(saved);
+    await this.notificationService.publishAppointmentStatusChanged(
+      saved,
+      'customer',
+    );
 
     return saved;
   }

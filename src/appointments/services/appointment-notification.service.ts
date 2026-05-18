@@ -36,12 +36,17 @@ export class AppointmentNotificationService {
 
   async publishAppointmentStatusChanged(
     appointment: Appointment,
+    actor?: 'customer' | 'provider' | 'system',
   ): Promise<void> {
     await this.messagingService.publish(
       MuralEvents.APPOINTMENT_STATUS_CHANGED,
       {
         appointmentId: appointment.id,
         status: appointment.status,
+        actor: actor ?? 'system',
+        // IDs explícitos evitam lookup extra no consumer
+        customerId: appointment.customerId ?? appointment.customer?.id ?? '',
+        providerId: appointment.service?.provider?.id ?? '',
         serviceName: appointment.service?.name ?? '',
         customerEmail: appointment.customer?.email ?? '',
         customerPhone: appointment.customer?.phone ?? '',
