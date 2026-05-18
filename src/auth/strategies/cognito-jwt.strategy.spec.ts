@@ -1,10 +1,15 @@
 // ── Mocks devem vir ANTES de qualquer import — Jest os hoi sta automaticamente ──
 // jwks-rsa importa 'jose' que é ESM puro (não suportado pelo Jest/CommonJS)
 jest.mock('jwks-rsa', () => ({
-  passportJwtSecret: jest.fn().mockReturnValue(
-    (_req: unknown, _token: unknown, done: (err: null, secret: string) => void) =>
-      done(null, 'mocked-secret'),
-  ),
+  passportJwtSecret: jest
+    .fn()
+    .mockReturnValue(
+      (
+        _req: unknown,
+        _token: unknown,
+        done: (err: null, secret: string) => void,
+      ) => done(null, 'mocked-secret'),
+    ),
 }));
 
 // @nestjs/passport instancia o Passport internamente; mockamos para evitar a
@@ -12,7 +17,6 @@ jest.mock('jwks-rsa', () => ({
 jest.mock('@nestjs/passport', () => ({
   PassportStrategy: (_Strategy: unknown) =>
     class MockPassportBase {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       constructor(..._args: unknown[]) {}
     },
 }));

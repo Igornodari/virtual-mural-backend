@@ -8,7 +8,12 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -69,7 +74,8 @@ export class UsersController {
   @Delete('me')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Remove a conta do usuário (LGPD Art. 18, IV — direito ao esquecimento)',
+    summary:
+      'Remove a conta do usuário (LGPD Art. 18, IV — direito ao esquecimento)',
     description:
       'Anonimiza todos os dados pessoais do usuário. A operação é irreversível. ' +
       'Bloqueada se houver serviços ativos ou agendamentos em aberto.',

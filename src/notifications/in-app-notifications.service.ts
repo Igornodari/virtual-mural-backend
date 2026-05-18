@@ -211,10 +211,7 @@ export class InAppNotificationsService {
     }
 
     const serviceId = input.payload?.serviceId;
-    if (
-      serviceId &&
-      input.type === NotificationType.NEW_SERVICE_AVAILABLE
-    ) {
+    if (serviceId && input.type === NotificationType.NEW_SERVICE_AVAILABLE) {
       return `/mural/customer?service=${serviceId}`;
     }
 

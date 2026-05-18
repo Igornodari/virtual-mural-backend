@@ -25,8 +25,9 @@ export class WhatsAppService {
     this.from = config.get<string>('TWILIO_WHATSAPP_FROM', '+14155238886');
 
     if (sid && token) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
       const twilio = require('twilio');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
       this.client = twilio(sid, token);
       this.enabled = true;
       this.logger.log('✅ WhatsApp (Twilio) inicializado');
@@ -59,6 +60,7 @@ export class WhatsAppService {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await this.client.messages.create({
         from: `whatsapp:${this.from}`,
         to: `whatsapp:${phone}`,

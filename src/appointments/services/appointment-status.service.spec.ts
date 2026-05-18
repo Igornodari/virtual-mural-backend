@@ -19,9 +19,7 @@ const createMockRepo = <T>(): MockRepo<T> & {
 });
 
 /** Cria um Appointment fake com relacionamentos mínimos */
-const makeAppointment = (
-  overrides: Partial<Appointment> = {},
-): Appointment =>
+const makeAppointment = (overrides: Partial<Appointment> = {}): Appointment =>
   ({
     id: 'appt-uuid-1',
     customerId: 'customer-uuid',
@@ -81,7 +79,7 @@ describe('AppointmentStatusService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       };
-      repo.createQueryBuilder!.mockReturnValue(qbMock);
+      repo.createQueryBuilder.mockReturnValue(qbMock);
       repo.save!.mockResolvedValue({ ...appointment, status: 'confirmed' });
 
       const result = await service.updateStatus(
@@ -93,7 +91,9 @@ describe('AppointmentStatusService', () => {
       expect(repo.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'confirmed' }),
       );
-      expect(notificationService.publishAppointmentStatusChanged).toHaveBeenCalled();
+      expect(
+        notificationService.publishAppointmentStatusChanged,
+      ).toHaveBeenCalled();
       expect(result.status).toBe('confirmed');
     });
 
@@ -102,7 +102,11 @@ describe('AppointmentStatusService', () => {
       queryService.findOne.mockResolvedValue(appointment);
 
       await expect(
-        service.updateStatus('appt-uuid-1', { status: 'confirmed' }, 'outro-uuid'),
+        service.updateStatus(
+          'appt-uuid-1',
+          { status: 'confirmed' },
+          'outro-uuid',
+        ),
       ).rejects.toThrow(ForbiddenException);
       expect(repo.save).not.toHaveBeenCalled();
     });
@@ -112,7 +116,11 @@ describe('AppointmentStatusService', () => {
       queryService.findOne.mockResolvedValue(appointment);
 
       await expect(
-        service.updateStatus('appt-uuid-1', { status: 'confirmed' }, 'provider-uuid'),
+        service.updateStatus(
+          'appt-uuid-1',
+          { status: 'confirmed' },
+          'provider-uuid',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -124,7 +132,11 @@ describe('AppointmentStatusService', () => {
       queryService.findOne.mockResolvedValue(appointment);
 
       await expect(
-        service.updateStatus('appt-uuid-1', { status: 'confirmed' }, 'provider-uuid'),
+        service.updateStatus(
+          'appt-uuid-1',
+          { status: 'confirmed' },
+          'provider-uuid',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -135,12 +147,18 @@ describe('AppointmentStatusService', () => {
       const qbMock = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(makeAppointment({ id: 'outro-appt' })),
+        getOne: jest
+          .fn()
+          .mockResolvedValue(makeAppointment({ id: 'outro-appt' })),
       };
-      repo.createQueryBuilder!.mockReturnValue(qbMock);
+      repo.createQueryBuilder.mockReturnValue(qbMock);
 
       await expect(
-        service.updateStatus('appt-uuid-1', { status: 'confirmed' }, 'provider-uuid'),
+        service.updateStatus(
+          'appt-uuid-1',
+          { status: 'confirmed' },
+          'provider-uuid',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -154,7 +172,11 @@ describe('AppointmentStatusService', () => {
       queryService.findOne.mockResolvedValue(appointment);
 
       await expect(
-        service.updateStatus('appt-uuid-1', { status: 'completed' }, 'provider-uuid'),
+        service.updateStatus(
+          'appt-uuid-1',
+          { status: 'completed' },
+          'provider-uuid',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -174,7 +196,9 @@ describe('AppointmentStatusService', () => {
       );
 
       expect(result.status).toBe('completed');
-      expect(notificationService.publishAppointmentStatusChanged).toHaveBeenCalled();
+      expect(
+        notificationService.publishAppointmentStatusChanged,
+      ).toHaveBeenCalled();
     });
   });
 
@@ -186,7 +210,10 @@ describe('AppointmentStatusService', () => {
       queryService.findOne.mockResolvedValue(appointment);
       repo.save!.mockResolvedValue({ ...appointment, status: 'cancelled' });
 
-      const result = await service.cancelByCustomer('appt-uuid-1', 'customer-uuid');
+      const result = await service.cancelByCustomer(
+        'appt-uuid-1',
+        'customer-uuid',
+      );
 
       expect(repo.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'cancelled' }),
@@ -217,7 +244,10 @@ describe('AppointmentStatusService', () => {
       queryService.findOne.mockResolvedValue(appointment);
       repo.save!.mockResolvedValue({ ...appointment, status: 'cancelled' });
 
-      const result = await service.cancelByCustomer('appt-uuid-1', 'customer-uuid');
+      const result = await service.cancelByCustomer(
+        'appt-uuid-1',
+        'customer-uuid',
+      );
 
       expect(result.status).toBe('cancelled');
     });

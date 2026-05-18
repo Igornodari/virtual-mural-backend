@@ -77,9 +77,9 @@ describe('AppointmentAvailabilityService', () => {
     servicesRepo.findOne.mockResolvedValue(null);
     const user = makeUser();
 
-    await expect(
-      service.findByService('inexistente', user),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.findByService('inexistente', user)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // ── findByService — visão do provider ──────────────────────────────────────
@@ -107,7 +107,10 @@ describe('AppointmentAvailabilityService', () => {
     // Sem slots bloqueados — lista vazia
     appointmentsRepo.createQueryBuilder.mockReturnValue(makeQbRawMock([]));
 
-    const customer = makeUser({ id: 'customer-uuid', condominiumId: 'condo-uuid' });
+    const customer = makeUser({
+      id: 'customer-uuid',
+      condominiumId: 'condo-uuid',
+    });
     const result = (await service.findByService(
       'service-uuid',
       customer,
@@ -142,7 +145,9 @@ describe('AppointmentAvailabilityService', () => {
       date: string;
       time: string | null;
     }>;
-    expect(blockedSlots.some((s) => s.date === '2030-12-01' && s.time === '09:00')).toBe(true);
+    expect(
+      blockedSlots.some((s) => s.date === '2030-12-01' && s.time === '09:00'),
+    ).toBe(true);
   });
 
   // ── findByService — ForbiddenException ─────────────────────────────────────

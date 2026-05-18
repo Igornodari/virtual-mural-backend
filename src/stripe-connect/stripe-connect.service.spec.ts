@@ -14,7 +14,8 @@ jest.mock('stripe', () => {
     accountLinks: mockAccountLinks,
   }));
 
-  (MockStripe as unknown as Record<string, unknown>).__mockAccounts = mockAccounts;
+  (MockStripe as unknown as Record<string, unknown>).__mockAccounts =
+    mockAccounts;
   (MockStripe as unknown as Record<string, unknown>).__mockAccountLinks =
     mockAccountLinks;
 
@@ -23,10 +24,7 @@ jest.mock('stripe', () => {
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
@@ -75,17 +73,19 @@ describe('StripeConnectService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockImplementation((key: string, fallback?: string) => {
-              const map: Record<string, string> = {
-                STRIPE_SECRET_KEY: 'sk_test_abc',
-                PLATFORM_FEE_PERCENT: '5',
-                STRIPE_CONNECT_RETURN_URL:
-                  'http://localhost:4200/mural/provider?stripe_connect=success',
-                STRIPE_CONNECT_REFRESH_URL:
-                  'http://localhost:4200/mural/provider?stripe_connect=refresh',
-              };
-              return map[key] ?? fallback;
-            }),
+            get: jest
+              .fn()
+              .mockImplementation((key: string, fallback?: string) => {
+                const map: Record<string, string> = {
+                  STRIPE_SECRET_KEY: 'sk_test_abc',
+                  PLATFORM_FEE_PERCENT: '5',
+                  STRIPE_CONNECT_RETURN_URL:
+                    'http://localhost:4200/mural/provider?stripe_connect=success',
+                  STRIPE_CONNECT_REFRESH_URL:
+                    'http://localhost:4200/mural/provider?stripe_connect=refresh',
+                };
+                return map[key] ?? fallback;
+              }),
           },
         },
       ],
@@ -96,11 +96,14 @@ describe('StripeConnectService', () => {
     // Acessa as referências dos mocks internos via propriedades estáticas do mock
     const StripeMock = Stripe as unknown as Record<string, unknown>;
     mockAccounts = StripeMock.__mockAccounts as Record<string, jest.Mock>;
-    mockAccountLinks = StripeMock.__mockAccountLinks as Record<string, jest.Mock>;
+    mockAccountLinks = StripeMock.__mockAccountLinks as Record<
+      string,
+      jest.Mock
+    >;
 
     // Limpa implementações mas mantém a estrutura
-    Object.values(mockAccounts).forEach((fn) => (fn as jest.Mock).mockReset());
-    Object.values(mockAccountLinks).forEach((fn) => (fn as jest.Mock).mockReset());
+    Object.values(mockAccounts).forEach((fn) => fn.mockReset());
+    Object.values(mockAccountLinks).forEach((fn) => fn.mockReset());
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -152,9 +155,9 @@ describe('StripeConnectService', () => {
     it('deve lançar NotFoundException se o provider não existir', async () => {
       usersRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.createOrGetAccount('inexistente'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.createOrGetAccount('inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -297,7 +300,9 @@ describe('StripeConnectService', () => {
 
       const result = await service.createDashboardLink('provider-uuid');
 
-      expect(mockAccounts.createLoginLink).toHaveBeenCalledWith('acct_dashboard');
+      expect(mockAccounts.createLoginLink).toHaveBeenCalledWith(
+        'acct_dashboard',
+      );
       expect(result).toEqual({
         url: 'https://dashboard.stripe.com/express/acct_dashboard',
       });

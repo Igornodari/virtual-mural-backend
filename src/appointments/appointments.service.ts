@@ -841,7 +841,9 @@ export class AppointmentsService {
         serviceName: appointment.service?.name ?? '',
         customerId: appointment.customerId,
         customerName:
-          appointment.customer?.displayName ?? appointment.customer?.email ?? '',
+          appointment.customer?.displayName ??
+          appointment.customer?.email ??
+          '',
         customerEmail: appointment.customer?.email ?? '',
         providerId: appointment.service?.provider?.id ?? '',
         providerName: appointment.service?.provider?.displayName ?? '',

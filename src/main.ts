@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 import helmet from 'helmet';
+import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import {
   HttpExceptionFilter,
@@ -33,7 +34,7 @@ async function bootstrap() {
   // ── Prefixo e rotas ───────────────────────────────────────────────────────
   app.setGlobalPrefix('api/v1');
 
-  app.use('/health', (_req: any, res: any) => {
+  app.use('/health', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/json');
     res.end(
       JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }),

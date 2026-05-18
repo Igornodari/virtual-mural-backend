@@ -209,10 +209,7 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
       await handler(event, payload);
       this.channel?.ack(msg);
     } catch (err) {
-      this.logger.error(
-        'Erro ao processar mensagem:',
-        (err as Error).message,
-      );
+      this.logger.error('Erro ao processar mensagem:', (err as Error).message);
       // Rejeita e descarta a mensagem (não re-enfileira para evitar loop)
       this.channel?.nack(msg, false, false);
     }

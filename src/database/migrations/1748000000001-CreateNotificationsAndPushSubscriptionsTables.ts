@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateNotificationsAndPushSubscriptionsTables1748000000001
-  implements MigrationInterface
-{
+export class CreateNotificationsAndPushSubscriptionsTables1748000000001 implements MigrationInterface {
   name = 'CreateNotificationsAndPushSubscriptionsTables1748000000001';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

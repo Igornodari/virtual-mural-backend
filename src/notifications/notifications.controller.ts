@@ -88,10 +88,7 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard)
   @Patch(':id/read')
   @ApiOperation({ summary: 'Marca uma notificação como lida.' })
-  markRead(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  markRead(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.inApp.markAsRead(id, user.id);
   }
 
@@ -119,7 +116,7 @@ export class NotificationsController {
       endpoint: dto.endpoint,
       p256dh: dto.keys.p256dh,
       auth: dto.keys.auth,
-      userAgent: userAgent as string | undefined,
+      userAgent: userAgent,
     });
 
     return { id: saved.id };

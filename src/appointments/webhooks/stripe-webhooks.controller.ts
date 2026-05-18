@@ -57,7 +57,11 @@ export class StripeWebhooksController {
 
     for (const secret of candidateSecrets) {
       try {
-        event = this.stripe.webhooks.constructEvent(req.body, sig, secret);
+        event = this.stripe.webhooks.constructEvent(
+          req.body as string | Buffer,
+          sig,
+          secret,
+        );
         break;
       } catch (err) {
         lastError = err as Error;
