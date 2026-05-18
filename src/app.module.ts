@@ -27,12 +27,12 @@ import { StripeConnectModule } from './stripe-connect/stripe-connect.module';
           {
             name: 'default',
             ttl: 60_000, // 60 segundos
-            limit: 100,  // 100 requisições por IP
+            limit: 100, // 100 requisições por IP
           },
           {
             name: 'strict',
             ttl: 60_000,
-            limit: 10,   // usado em rotas sensíveis
+            limit: 10, // usado em rotas sensíveis
           },
         ],
       }),

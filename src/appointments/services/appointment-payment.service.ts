@@ -412,7 +412,7 @@ export class AppointmentPaymentService {
             sessionId: payment.checkoutSessionId,
           });
         }
-      } catch (err) {
+      } catch {
         this.logger.warn(
           `[syncPendingPaymentsForCustomer] Sessão ${payment.checkoutSessionId} não encontrada no Stripe — marcando como failed`,
         );
@@ -458,7 +458,7 @@ export class AppointmentPaymentService {
             sessionId: payment.checkoutSessionId,
           });
         }
-      } catch (err) {
+      } catch {
         this.logger.warn(
           `[syncPendingPaymentsForProvider] Sessão ${payment.checkoutSessionId} não encontrada no Stripe — marcando como failed`,
         );

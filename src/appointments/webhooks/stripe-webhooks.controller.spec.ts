@@ -46,7 +46,10 @@ function makeRes() {
   return res;
 }
 
-function makeEvent(type: string, data: Record<string, unknown> = {}): Stripe.Event {
+function makeEvent(
+  type: string,
+  data: Record<string, unknown> = {},
+): Stripe.Event {
   return {
     id: 'evt_test',
     type,
@@ -77,8 +80,12 @@ describe('StripeWebhooksController', () => {
     appointmentsService = {
       handleStripePaymentSucceeded: jest.fn().mockResolvedValue(undefined),
       handleStripePaymentFailed: jest.fn().mockResolvedValue(undefined),
-      handleStripeCheckoutSessionCompleted: jest.fn().mockResolvedValue(undefined),
-      handleStripeCheckoutSessionExpired: jest.fn().mockResolvedValue(undefined),
+      handleStripeCheckoutSessionCompleted: jest
+        .fn()
+        .mockResolvedValue(undefined),
+      handleStripeCheckoutSessionExpired: jest
+        .fn()
+        .mockResolvedValue(undefined),
     };
     stripeConnectService = {
       handleAccountUpdated: jest.fn().mockResolvedValue(undefined),
@@ -160,9 +167,9 @@ describe('StripeWebhooksController', () => {
 
     await controller.handleStripeWebhook(req as never, res as never);
 
-    expect(appointmentsService.handleStripePaymentSucceeded).toHaveBeenCalledWith(
-      'pi_test_123',
-    );
+    expect(
+      appointmentsService.handleStripePaymentSucceeded,
+    ).toHaveBeenCalledWith('pi_test_123');
     expect(res.json).toHaveBeenCalledWith({ received: true });
   });
 
@@ -294,7 +301,9 @@ describe('StripeWebhooksController', () => {
 
     expect(res.json).toHaveBeenCalledWith({ received: true });
     // Nenhum método de negócio deve ter sido chamado
-    expect(appointmentsService.handleStripePaymentSucceeded).not.toHaveBeenCalled();
+    expect(
+      appointmentsService.handleStripePaymentSucceeded,
+    ).not.toHaveBeenCalled();
     expect(stripeConnectService.handleAccountUpdated).not.toHaveBeenCalled();
   });
 });

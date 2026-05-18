@@ -68,6 +68,7 @@ describe('CondominiumsService', () => {
         addressState: 'SP',
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = await service.create(dto as any);
 
       expect(repo.create).toHaveBeenCalledWith(dto);
@@ -129,9 +130,12 @@ describe('CondominiumsService', () => {
     it('deve atualizar e salvar o condomínio', async () => {
       const condo = mockCondominium();
       repo.findOne!.mockResolvedValue(condo);
-      repo.save!.mockImplementation(async (c: Condominium) => c);
+      repo.save!.mockImplementation((c: Condominium) => c);
 
-      const result = await service.update(condo.id, { name: 'Novo Nome' } as any);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const result = await service.update(condo.id, {
+        name: 'Novo Nome',
+      } as any);
 
       expect(result.name).toBe('Novo Nome');
     });
@@ -140,6 +144,7 @@ describe('CondominiumsService', () => {
       repo.findOne!.mockResolvedValue(null);
 
       await expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         service.update('inexistente', { name: 'Teste' } as any),
       ).rejects.toThrow(NotFoundException);
     });
@@ -149,7 +154,7 @@ describe('CondominiumsService', () => {
     it('deve fazer soft delete setando isActive=false', async () => {
       const condo = mockCondominium();
       repo.findOne!.mockResolvedValue(condo);
-      repo.save!.mockImplementation(async (c: Condominium) => c);
+      repo.save!.mockImplementation((c: Condominium) => c);
 
       await service.remove(condo.id);
 

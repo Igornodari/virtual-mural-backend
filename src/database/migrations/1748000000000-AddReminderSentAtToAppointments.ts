@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddReminderSentAtToAppointments1748000000000
-  implements MigrationInterface
-{
+export class AddReminderSentAtToAppointments1748000000000 implements MigrationInterface {
   name = 'AddReminderSentAtToAppointments1748000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

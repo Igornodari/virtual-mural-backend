@@ -114,10 +114,7 @@ export class WebPushService implements OnModuleInit {
    * Falhas individuais (sub inválida, navegador offline) NÃO interrompem
    * o fluxo — o método sempre resolve, apenas logando os erros.
    */
-  async sendToUser(
-    userId: string,
-    notification: Notification,
-  ): Promise<void> {
+  async sendToUser(userId: string, notification: Notification): Promise<void> {
     if (!this.isConfigured) {
       return;
     }

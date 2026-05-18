@@ -1,9 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ServicesService } from './services.service';
 import { Service } from './entities/service.entity';
@@ -90,6 +87,7 @@ describe('ServicesService', () => {
         availableDays: ['seg', 'ter'],
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = await service.create(dto as any, provider);
 
       expect(repo.create).toHaveBeenCalled();
@@ -101,6 +99,7 @@ describe('ServicesService', () => {
     it('deve lançar ForbiddenException se usuário não é prestador', async () => {
       const provider = { ...mockProvider(), isProvider: false };
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await expect(service.create({} as any, provider as User)).rejects.toThrow(
         ForbiddenException,
       );
@@ -110,6 +109,7 @@ describe('ServicesService', () => {
       const provider = { ...mockProvider(), condominiumId: null };
 
       await expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         service.create({ availableDays: ['seg'] } as any, provider as User),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -118,7 +118,11 @@ describe('ServicesService', () => {
       const provider = mockProvider();
 
       await expect(
-        service.create({ condominiumId: 'condo-uuid', availableDays: [] } as any, provider),
+        service.create(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          { condominiumId: 'condo-uuid', availableDays: [] } as any,
+          provider,
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -145,9 +149,14 @@ describe('ServicesService', () => {
     it('deve atualizar o serviço quando é o dono', async () => {
       const svc = mockService();
       repo.findOne!.mockResolvedValue(svc);
-      repo.save!.mockImplementation(async (s: Service) => s);
+      repo.save!.mockImplementation((s: Service) => s);
 
-      const result = await service.update(svc.id, { name: 'Novo Nome' } as any, 'provider-uuid');
+      const result = await service.update(
+        svc.id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        { name: 'Novo Nome' } as any,
+        'provider-uuid',
+      );
 
       expect(result.name).toBe('Novo Nome');
     });
@@ -157,6 +166,7 @@ describe('ServicesService', () => {
       repo.findOne!.mockResolvedValue(svc);
 
       await expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         service.update(svc.id, {} as any, 'outro-user-id'),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -166,7 +176,7 @@ describe('ServicesService', () => {
     it('deve fazer soft delete quando é o dono', async () => {
       const svc = mockService();
       repo.findOne!.mockResolvedValue(svc);
-      repo.save!.mockImplementation(async (s: Service) => s);
+      repo.save!.mockImplementation((s: Service) => s);
 
       await service.remove(svc.id, 'provider-uuid');
 
@@ -189,7 +199,7 @@ describe('ServicesService', () => {
     it('deve incrementar clicks do serviço', async () => {
       const svc = { ...mockService(), clicks: 5 };
       repo.findOne!.mockResolvedValue(svc);
-      repo.save!.mockImplementation(async (s: Service) => s);
+      repo.save!.mockImplementation((s: Service) => s);
 
       await service.trackMetric(svc.id, 'clicks');
 
@@ -201,9 +211,9 @@ describe('ServicesService', () => {
     it('deve lançar NotFoundException quando serviço não existe', async () => {
       repo.findOne!.mockResolvedValue(null);
 
-      await expect(service.trackMetric('inexistente', 'clicks')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.trackMetric('inexistente', 'clicks'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

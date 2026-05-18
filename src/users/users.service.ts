@@ -36,8 +36,18 @@ export interface UserExportData {
   createdAt: Date;
   updatedAt: Date;
   exportedAt: string;
-  services: Array<{ id: string; name: string; category: string; createdAt: Date }>;
-  appointments: Array<{ id: string; status: string; scheduledDate: string; createdAt: Date }>;
+  services: Array<{
+    id: string;
+    name: string;
+    category: string;
+    createdAt: Date;
+  }>;
+  appointments: Array<{
+    id: string;
+    status: string;
+    scheduledDate: string;
+    createdAt: Date;
+  }>;
   totalReviews: number;
 }
 

@@ -61,7 +61,10 @@ describe('UsersService', () => {
         UsersService,
         { provide: getRepositoryToken(User), useValue: usersRepo },
         { provide: getRepositoryToken(Service), useValue: servicesRepo },
-        { provide: getRepositoryToken(Appointment), useValue: appointmentsRepo },
+        {
+          provide: getRepositoryToken(Appointment),
+          useValue: appointmentsRepo,
+        },
       ],
     }).compile();
 
@@ -89,6 +92,7 @@ describe('UsersService', () => {
       });
       expect(result).toBe(user);
       expect(usersRepo.save).toHaveBeenCalledWith(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         expect.objectContaining({ lastLoginAt: expect.any(Date) }),
       );
     });
@@ -171,7 +175,10 @@ describe('UsersService', () => {
       });
 
       expect(usersRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ givenName: 'Pedro', phone: '+5511888888888' }),
+        expect.objectContaining({
+          givenName: 'Pedro',
+          phone: '+5511888888888',
+        }),
       );
       expect(result.givenName).toBe('Pedro');
     });
@@ -191,7 +198,7 @@ describe('UsersService', () => {
     it('deve vincular o usuário a um condomínio', async () => {
       const user = mockUser();
       usersRepo.findOne!.mockResolvedValue(user);
-      usersRepo.save!.mockImplementation(async (u: User) => u);
+      usersRepo.save!.mockImplementation((u: User) => u);
 
       const result = await service.updateOnboarding(user.id, {
         condominiumId: 'condo-uuid',
@@ -205,7 +212,7 @@ describe('UsersService', () => {
     it('deve chamar assertCanDeactivateProvider ao desativar prestador', async () => {
       const user = { ...mockUser(), isProvider: true };
       usersRepo.findOne!.mockResolvedValue(user);
-      usersRepo.save!.mockImplementation(async (u: User) => u);
+      usersRepo.save!.mockImplementation((u: User) => u);
       servicesRepo.count!.mockResolvedValue(0);
 
       const mockQb = {
@@ -217,7 +224,9 @@ describe('UsersService', () => {
 
       appointmentsRepo.createQueryBuilder!.mockReturnValue(mockQb);
 
-      const result = await service.updateOnboarding(user.id, { isProvider: false });
+      const result = await service.updateOnboarding(user.id, {
+        isProvider: false,
+      });
       expect(result.isProvider).toBe(false);
     });
   });
@@ -228,9 +237,9 @@ describe('UsersService', () => {
     it('deve lançar BadRequestException se há serviços ativos', async () => {
       servicesRepo.count!.mockResolvedValue(2);
 
-      await expect(service.assertCanDeactivateProvider('user-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.assertCanDeactivateProvider('user-1'),
+      ).rejects.toThrow(BadRequestException);
       expect(servicesRepo.count).toHaveBeenCalledWith({
         where: { providerId: 'user-1', isActive: true },
       });
@@ -248,9 +257,9 @@ describe('UsersService', () => {
 
       appointmentsRepo.createQueryBuilder!.mockReturnValue(mockQb);
 
-      await expect(service.assertCanDeactivateProvider('user-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.assertCanDeactivateProvider('user-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('deve completar sem erro quando não há impeditivos', async () => {
@@ -265,7 +274,9 @@ describe('UsersService', () => {
 
       appointmentsRepo.createQueryBuilder!.mockReturnValue(mockQb);
 
-      await expect(service.assertCanDeactivateProvider('user-1')).resolves.toBeUndefined();
+      await expect(
+        service.assertCanDeactivateProvider('user-1'),
+      ).resolves.toBeUndefined();
     });
   });
 
@@ -275,12 +286,13 @@ describe('UsersService', () => {
     it('deve anonimizar os dados do usuário', async () => {
       const user = mockUser();
       usersRepo.findOne!.mockResolvedValue(user);
-      usersRepo.save!.mockImplementation(async (u: User) => u);
+      usersRepo.save!.mockImplementation((u: User) => u);
 
       await service.deleteAccount(user.id);
 
       expect(usersRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           email: expect.stringContaining('deleted_'),
           givenName: 'Usuário',
           familyName: 'Removido',
@@ -306,7 +318,12 @@ describe('UsersService', () => {
 
   describe('exportData', () => {
     it('deve retornar dados pessoais completos do usuário', async () => {
-      const user = { ...mockUser(), services: [], appointments: [], reviews: [] };
+      const user = {
+        ...mockUser(),
+        services: [],
+        appointments: [],
+        reviews: [],
+      };
       usersRepo.findOne!.mockResolvedValue(user);
 
       const result = await service.exportData(user.id);
@@ -314,6 +331,7 @@ describe('UsersService', () => {
       expect(result).toMatchObject({
         id: user.id,
         email: user.email,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         exportedAt: expect.any(String),
         services: [],
         appointments: [],

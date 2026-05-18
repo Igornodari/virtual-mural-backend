@@ -82,7 +82,10 @@ describe('ReviewsService', () => {
       const dto = { serviceId: 'service-uuid', rating: 5, comment: 'Ótimo!' };
       const result = await service.create(dto, mockAuthor());
 
-      expect(repo.create).toHaveBeenCalledWith({ ...dto, authorId: 'user-uuid' });
+      expect(repo.create).toHaveBeenCalledWith({
+        ...dto,
+        authorId: 'user-uuid',
+      });
       expect(repo.save).toHaveBeenCalledWith(review);
       expect(servicesService.recalcRating).toHaveBeenCalledWith('service-uuid');
       expect(messagingService.publish).toHaveBeenCalled();

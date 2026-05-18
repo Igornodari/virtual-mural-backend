@@ -85,9 +85,11 @@ function buildTransactionMock(
     }),
   };
 
-  return jest.fn().mockImplementation((cb: (em: unknown) => Promise<unknown>) =>
-    cb(mockEntityManager),
-  );
+  return jest
+    .fn()
+    .mockImplementation((cb: (em: unknown) => Promise<unknown>) =>
+      cb(mockEntityManager),
+    );
 }
 
 describe('AppointmentPaymentService', () => {
@@ -159,7 +161,10 @@ describe('AppointmentPaymentService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppointmentPaymentService,
-        { provide: getRepositoryToken(Appointment), useValue: appointmentsRepo },
+        {
+          provide: getRepositoryToken(Appointment),
+          useValue: appointmentsRepo,
+        },
         { provide: getRepositoryToken(Payment), useValue: paymentsRepo },
         { provide: getRepositoryToken(Service), useValue: {} },
         { provide: ConfigService, useValue: configService },
@@ -217,7 +222,9 @@ describe('AppointmentPaymentService', () => {
       expect(result.checkoutUrl).toBe(
         'https://checkout.stripe.com/pay/cs_test_abc',
       );
-      expect(notificationService.publishAppointmentStatusChanged).toHaveBeenCalled();
+      expect(
+        notificationService.publishAppointmentStatusChanged,
+      ).toHaveBeenCalled();
     });
 
     it('deve reutilizar pagamento existente não-failed', async () => {
@@ -295,7 +302,10 @@ describe('AppointmentPaymentService', () => {
       apptManagerRepo.findOne.mockResolvedValue(appointment);
       paymentManagerRepo.findOne.mockResolvedValue(payment);
       paymentManagerRepo.save.mockResolvedValue({ ...payment, status: 'paid' });
-      apptManagerRepo.save.mockResolvedValue({ ...appointment, status: 'paid' });
+      apptManagerRepo.save.mockResolvedValue({
+        ...appointment,
+        status: 'paid',
+      });
 
       await service.handleStripeCheckoutSessionCompleted({
         appointmentId: 'appt-uuid-1',
@@ -308,7 +318,9 @@ describe('AppointmentPaymentService', () => {
       expect(apptManagerRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'paid' }),
       );
-      expect(notificationService.publishAppointmentStatusChanged).toHaveBeenCalled();
+      expect(
+        notificationService.publishAppointmentStatusChanged,
+      ).toHaveBeenCalled();
     });
 
     it('deve sair silenciosamente se o appointment não for encontrado', async () => {
@@ -333,7 +345,10 @@ describe('AppointmentPaymentService', () => {
       const appointment = makeAppointment({ status: 'awaiting_payment' });
 
       paymentManagerRepo.findOne.mockResolvedValue(payment);
-      paymentManagerRepo.save.mockResolvedValue({ ...payment, status: 'failed' });
+      paymentManagerRepo.save.mockResolvedValue({
+        ...payment,
+        status: 'failed',
+      });
       apptManagerRepo.findOne.mockResolvedValue(appointment);
       apptManagerRepo.save.mockResolvedValue({
         ...appointment,

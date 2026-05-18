@@ -64,9 +64,11 @@ function buildTransactionMock(
     }),
   };
 
-  return jest.fn().mockImplementation((cb: (em: unknown) => Promise<unknown>) =>
-    cb(mockEntityManager),
-  );
+  return jest
+    .fn()
+    .mockImplementation((cb: (em: unknown) => Promise<unknown>) =>
+      cb(mockEntityManager),
+    );
 }
 
 describe('AppointmentCreationService', () => {
@@ -129,7 +131,9 @@ describe('AppointmentCreationService', () => {
       ],
     }).compile();
 
-    service = module.get<AppointmentCreationService>(AppointmentCreationService);
+    service = module.get<AppointmentCreationService>(
+      AppointmentCreationService,
+    );
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -157,7 +161,9 @@ describe('AppointmentCreationService', () => {
     const result = await service.create(makeDto() as never, customer);
 
     expect(apptManagerRepo.save).toHaveBeenCalled();
-    expect(notificationService.publishAppointmentRequested).toHaveBeenCalledWith(
+    expect(
+      notificationService.publishAppointmentRequested,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         appointment: newAppointment,
         customer,
@@ -171,9 +177,9 @@ describe('AppointmentCreationService', () => {
   it('deve lançar ForbiddenException se o cliente não tem condominiumId', async () => {
     const customer = makeCustomer({ condominiumId: null as unknown as string });
 
-    await expect(
-      service.create(makeDto() as never, customer),
-    ).rejects.toThrow(ForbiddenException);
+    await expect(service.create(makeDto() as never, customer)).rejects.toThrow(
+      ForbiddenException,
+    );
     expect(appointmentsRepo.manager.transaction).not.toHaveBeenCalled();
   });
 
@@ -184,9 +190,9 @@ describe('AppointmentCreationService', () => {
     serviceManagerRepo.findOne.mockResolvedValueOnce(svc);
     apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock(null));
 
-    await expect(
-      service.create(makeDto() as never, customer),
-    ).rejects.toThrow(ForbiddenException);
+    await expect(service.create(makeDto() as never, customer)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   // ── create — BadRequestException ───────────────────────────────────────────
@@ -214,9 +220,9 @@ describe('AppointmentCreationService', () => {
     );
     apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock(null));
 
-    await expect(
-      service.create(makeDto() as never, customer),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.create(makeDto() as never, customer)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('deve lançar BadRequestException se o dia solicitado não estiver disponível', async () => {
@@ -239,9 +245,9 @@ describe('AppointmentCreationService', () => {
     serviceManagerRepo.findOne.mockResolvedValueOnce(svc);
     apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock(conflicting));
 
-    await expect(
-      service.create(makeDto() as never, customer),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.create(makeDto() as never, customer)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   // ── create — NotFoundException ──────────────────────────────────────────────
@@ -250,8 +256,8 @@ describe('AppointmentCreationService', () => {
     const customer = makeCustomer();
     serviceManagerRepo.findOne.mockResolvedValueOnce(null);
 
-    await expect(
-      service.create(makeDto() as never, customer),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.create(makeDto() as never, customer)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
