@@ -51,7 +51,8 @@ export class User {
   })
   authProvider: AuthProvider;
 
-  // ── Onboarding ─────────────────────────────────────────────────────────────
+  // ── Onboarding ────────────────────────────────────────────────────────────
+
   /**
    * Flag opt-in que indica que o usuário ativou o modo prestador e pode
    * publicar serviços. Todo usuário autenticado e vinculado a um
@@ -66,7 +67,17 @@ export class User {
   @Column({ default: false })
   addressCompleted: boolean;
 
-  // ── Relacionamentos ────────────────────────────────────────────────────────
+  // ── LGPD — Consentimento (Art. 7, I da Lei 13.709/2018) ──────────────────
+
+  /**
+   * Timestamp do aceite explícito dos Termos de Uso e Política de Privacidade.
+   * null = usuário cadastrado antes da funcionalidade ou ainda não aceitou.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  termsAcceptedAt: Date | null;
+
+  // ── Relacionamentos ───────────────────────────────────────────────────────
+
   @ManyToOne(() => Condominium, (condo) => condo.users, {
     nullable: true,
     onDelete: 'SET NULL',
@@ -86,7 +97,8 @@ export class User {
   @OneToMany(() => Review, (review) => review.author)
   reviews: Review[];
 
-  // ── Stripe Connect ─────────────────────────────────────────────────────────
+  // ── Stripe Connect ────────────────────────────────────────────────────────
+
   /** ID da conta Stripe Express do prestador (acct_xxx) */
   @Column({ type: 'varchar', nullable: true })
   stripeAccountId: string | null;

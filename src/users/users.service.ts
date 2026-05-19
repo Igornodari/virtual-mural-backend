@@ -238,4 +238,14 @@ export class UsersService {
       totalReviews: user.reviews?.length ?? 0,
     };
   }
+  /**
+   * LGPD — Consentimento (Art. 7, I da Lei 13.709/2018)
+   * Registra o timestamp de aceite explícito dos Termos de Uso e Política
+   * de Privacidade. Permite re-aceite quando os documentos são atualizados.
+   */
+  async acceptTerms(userId: string): Promise<User> {
+    const user = await this.findById(userId);
+    user.termsAcceptedAt = new Date();
+    return this.usersRepo.save(user);
+  }
 }
