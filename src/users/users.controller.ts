@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -54,6 +55,22 @@ export class UsersController {
     @Body() dto: UpdateOnboardingDto,
   ) {
     return this.usersService.updateOnboarding(user.id, dto);
+  }
+
+  // ── LGPD — Consentimento (Art. 7, I) ────────────────────────────────────
+  @Post('me/accept-terms')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Registra o aceite dos Termos de Uso e Política de Privacidade (LGPD Art. 7, I)',
+    description:
+      'Persiste o timestamp de aceite explícito. Deve ser chamado pelo frontend ' +
+      'após o usuário marcar o checkbox de consentimento no cadastro ou ' +
+      'no modal de re-aceite exibido na primeira sessão após atualização dos documentos.',
+  })
+  @ApiResponse({ status: 200, description: 'Aceite registrado com sucesso.' })
+  @Throttle({ strict: { limit: 10, ttl: 3_600_000 } })
+  acceptTerms(@CurrentUser() user: User) {
+    return this.usersService.acceptTerms(user.id);
   }
 
   // ── LGPD — Direito de acesso (Art. 18, I) ───────────────────────────────
