@@ -44,7 +44,7 @@ import { StripeConnectModule } from './stripe-connect/stripe-connect.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const isSynchronizeOn =
-          config.get<string>('DB_SYNC', 'true') === 'true';
+          config.get<string>('DB_SYNC', 'false') === 'true';
 
         return {
           type: 'postgres',
