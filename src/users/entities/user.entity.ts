@@ -54,9 +54,9 @@ export class User {
   // ── Onboarding ────────────────────────────────────────────────────────────
 
   /**
-   * Flag opt-in que indica que o usuário ativou o modo prestador e pode
-   * publicar serviços. Todo usuário autenticado e vinculado a um
-   * condomínio já é morador; este é um papel adicional.
+   * Flag opt-in que indica que o usuario ativou o modo prestador e pode
+   * publicar servicos. Todo usuario autenticado e vinculado a um
+   * condominio ja e morador; este e um papel adicional.
    */
   @Column({ default: false })
   isProvider: boolean;
@@ -110,6 +110,14 @@ export class User {
     nullable: true,
   })
   stripeAccountStatus: 'pending' | 'active' | 'restricted' | null;
+
+  // ── LGPD — Consentimento (Art. 7, I) ──────────────────────────────────────
+  /**
+   * Timestamp do ultimo aceite explicito dos Termos de Uso e Politica
+   * de Privacidade. Null indica que o usuario ainda nao aceitou.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  termsAcceptedAt: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginAt: Date;
