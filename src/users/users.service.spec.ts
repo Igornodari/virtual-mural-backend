@@ -29,6 +29,7 @@ const mockUser = (): User =>
     reviews: [],
     stripeAccountId: null,
     stripeAccountStatus: null,
+    termsAcceptedAt: null,
     lastLoginAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -277,6 +278,52 @@ describe('UsersService', () => {
       await expect(
         service.assertCanDeactivateProvider('user-1'),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  // ── acceptTerms (LGPD) ───────────────────────────────────────────────────
+
+  describe('acceptTerms', () => {
+    it('deve salvar o timestamp de aceite dos termos', async () => {
+      const user = mockUser();
+      usersRepo.findOne!.mockResolvedValue(user);
+      usersRepo.save!.mockImplementation((u: User) => Promise.resolve(u));
+
+      const before = new Date();
+      const result = await service.acceptTerms(user.id);
+      const after = new Date();
+
+      expect(result.termsAcceptedAt).toBeDefined();
+      expect(result.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
+      expect(result.termsAcceptedAt!.getTime()).toBeLessThanOrEqual(
+        after.getTime(),
+      );
+      expect(usersRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ termsAcceptedAt: result.termsAcceptedAt }),
+      );
+    });
+
+    it('deve sobrescrever aceite anterior (re-aceite após atualização dos termos)', async () => {
+      const oldDate = new Date('2024-01-01');
+      const user = { ...mockUser(), termsAcceptedAt: oldDate };
+      usersRepo.findOne!.mockResolvedValue(user);
+      usersRepo.save!.mockImplementation((u: User) => Promise.resolve(u));
+
+      const result = await service.acceptTerms(user.id);
+
+      expect(result.termsAcceptedAt!.getTime()).toBeGreaterThan(
+        oldDate.getTime(),
+      );
+    });
+
+    it('deve lançar NotFoundException quando usuário não existe', async () => {
+      usersRepo.findOne!.mockResolvedValue(null);
+
+      await expect(service.acceptTerms('id-invalido')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
