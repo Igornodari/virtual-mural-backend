@@ -82,7 +82,9 @@ describe('ServicesController', () => {
 
       const result = await controller.findAll(user);
 
-      expect(servicesService.findByCondominium).toHaveBeenCalledWith('cond-uuid-1');
+      expect(servicesService.findByCondominium).toHaveBeenCalledWith(
+        'cond-uuid-1',
+      );
       expect(result).toEqual(services);
     });
 
@@ -94,7 +96,9 @@ describe('ServicesController', () => {
 
       await controller.findAll(user, 'outro-cond-id');
 
-      expect(servicesService.findByCondominium).toHaveBeenCalledWith('outro-cond-id');
+      expect(servicesService.findByCondominium).toHaveBeenCalledWith(
+        'outro-cond-id',
+      );
     });
 
     it('deve buscar serviços do prestador quando mine=true', async () => {
@@ -121,7 +125,9 @@ describe('ServicesController', () => {
 
       const result = await controller.getProviderAnalytics(user);
 
-      expect(servicesService.getProviderAnalytics).toHaveBeenCalledWith(user.id);
+      expect(servicesService.getProviderAnalytics).toHaveBeenCalledWith(
+        user.id,
+      );
       expect(result).toEqual(analytics);
     });
   });
@@ -154,7 +160,11 @@ describe('ServicesController', () => {
 
       const result = await controller.update(service.id, dto, user);
 
-      expect(servicesService.update).toHaveBeenCalledWith(service.id, dto, user.id);
+      expect(servicesService.update).toHaveBeenCalledWith(
+        service.id,
+        dto,
+        user.id,
+      );
       expect(result).toEqual(updated);
     });
   });
@@ -186,7 +196,10 @@ describe('ServicesController', () => {
 
         await controller.trackMetric(serviceId, metric);
 
-        expect(servicesService.trackMetric).toHaveBeenCalledWith(serviceId, metric);
+        expect(servicesService.trackMetric).toHaveBeenCalledWith(
+          serviceId,
+          metric,
+        );
       },
     );
   });

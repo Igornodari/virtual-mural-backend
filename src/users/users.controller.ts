@@ -61,7 +61,8 @@ export class UsersController {
   @Post('me/accept-terms')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Registra o aceite dos Termos de Uso e Política de Privacidade (LGPD Art. 7, I)',
+    summary:
+      'Registra o aceite dos Termos de Uso e Política de Privacidade (LGPD Art. 7, I)',
     description:
       'Persiste o timestamp de aceite explícito. Deve ser chamado pelo frontend ' +
       'após o usuário marcar o checkbox de consentimento no cadastro ou ' +
@@ -91,13 +92,17 @@ export class UsersController {
   @Delete('me')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Remove a conta do usuário (LGPD Art. 18, IV — direito ao esquecimento)',
+    summary:
+      'Remove a conta do usuário (LGPD Art. 18, IV — direito ao esquecimento)',
     description:
       'Anonimiza todos os dados pessoais do usuário. A operação é irreversível. ' +
       'Bloqueada se houver serviços ativos ou agendamentos em aberto.',
   })
   @ApiResponse({ status: 204, description: 'Conta removida com sucesso.' })
-  @ApiResponse({ status: 400, description: 'Há serviços ativos ou agendamentos em aberto.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Há serviços ativos ou agendamentos em aberto.',
+  })
   @Throttle({ strict: { limit: 3, ttl: 3_600_000 } })
   async deleteAccount(@CurrentUser() user: User): Promise<void> {
     await this.usersService.deleteAccount(user.id);

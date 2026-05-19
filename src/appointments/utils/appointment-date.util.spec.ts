@@ -94,7 +94,9 @@ describe('appointment-date.util', () => {
     });
 
     it('deve aceitar Date como primeiro argumento', () => {
-      expect(hasAppointmentDateTimePassed(new Date('2020-06-15'), '10:00')).toBe(true);
+      expect(
+        hasAppointmentDateTimePassed(new Date('2020-06-15'), '10:00'),
+      ).toBe(true);
     });
   });
 });

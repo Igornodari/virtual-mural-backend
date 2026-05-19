@@ -40,4 +40,13 @@ export default tseslint.config(
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
+  // Arquivos de teste: expect(mock).toHaveBeenCalledWith() dispara
+  // unbound-method como falso positivo — o Jest ja vincula o metodo
+  // corretamente ao matcher. Desabilitamos apenas nos specs.
+  {
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 );

@@ -6,9 +6,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Nullable: usuários existentes ficam com null (precisarão aceitar
  * os termos na próxima sessão via modal de consentimento).
  */
-export class AddTermsAcceptedAtToUsers1748500000000
-  implements MigrationInterface
-{
+export class AddTermsAcceptedAtToUsers1748500000000 implements MigrationInterface {
   name = 'AddTermsAcceptedAtToUsers1748500000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

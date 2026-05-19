@@ -36,8 +36,18 @@ export interface UserExportData {
   createdAt: Date;
   updatedAt: Date;
   exportedAt: string;
-  services: Array<{ id: string; name: string; category: string; createdAt: Date }>;
-  appointments: Array<{ id: string; status: string; scheduledDate: string; createdAt: Date }>;
+  services: Array<{
+    id: string;
+    name: string;
+    category: string;
+    createdAt: Date;
+  }>;
+  appointments: Array<{
+    id: string;
+    status: string;
+    scheduledDate: string;
+    createdAt: Date;
+  }>;
   totalReviews: number;
 }
 
@@ -101,7 +111,10 @@ export class UsersService {
     return this.usersRepo.save(user);
   }
 
-  async updateOnboarding(userId: string, dto: UpdateOnboardingDto): Promise<User> {
+  async updateOnboarding(
+    userId: string,
+    dto: UpdateOnboardingDto,
+  ): Promise<User> {
     const user = await this.findById(userId);
 
     if (dto.condominiumId !== undefined) {
@@ -232,15 +245,5 @@ export class UsersService {
       })),
       totalReviews: user.reviews?.length ?? 0,
     };
-  }
-  /**
-   * LGPD — Consentimento (Art. 7, I da Lei 13.709/2018)
-   * Registra o timestamp de aceite explícito dos Termos de Uso e Política
-   * de Privacidade. Permite re-aceite quando os documentos são atualizados.
-   */
-  async acceptTerms(userId: string): Promise<User> {
-    const user = await this.findById(userId);
-    user.termsAcceptedAt = new Date();
-    return this.usersRepo.save(user);
   }
 }

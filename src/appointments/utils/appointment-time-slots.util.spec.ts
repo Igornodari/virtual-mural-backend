@@ -63,7 +63,10 @@ describe('appointment-time-slots.util', () => {
     });
 
     it('deve retornar DEFAULT_SERVICE_TIME_SLOTS quando availabilitySlots é array vazio', () => {
-      const service = { ...baseService, availabilitySlots: [] } as unknown as Service;
+      const service = {
+        ...baseService,
+        availabilitySlots: [],
+      } as unknown as Service;
       expect(resolveTimeSlotsForDay(service, 'segunda-feira')).toEqual(
         DEFAULT_SERVICE_TIME_SLOTS,
       );
@@ -137,7 +140,9 @@ describe('appointment-time-slots.util', () => {
     it('deve ignorar slots sem day definido', () => {
       const service = {
         ...baseService,
-        availabilitySlots: [{ day: null, startTime: '09:00', endTime: '10:00' }],
+        availabilitySlots: [
+          { day: null, startTime: '09:00', endTime: '10:00' },
+        ],
       } as unknown as Service;
 
       expect(resolveTimeSlotsForDay(service, 'segunda-feira')).toEqual(

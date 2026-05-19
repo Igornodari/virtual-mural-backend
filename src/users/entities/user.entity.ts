@@ -111,14 +111,6 @@ export class User {
   })
   stripeAccountStatus: 'pending' | 'active' | 'restricted' | null;
 
-  // ── LGPD — Consentimento (Art. 7, I) ──────────────────────────────────────
-  /**
-   * Timestamp do ultimo aceite explicito dos Termos de Uso e Politica
-   * de Privacidade. Null indica que o usuario ainda nao aceitou.
-   */
-  @Column({ type: 'timestamptz', nullable: true })
-  termsAcceptedAt: Date | null;
-
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginAt: Date;
 
