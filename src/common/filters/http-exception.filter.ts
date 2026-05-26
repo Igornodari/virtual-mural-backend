@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { SentryReporter } from '../../sentry/sentry.reporter';
 
 export interface ErrorResponse {
   statusCode: number;
@@ -46,6 +47,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         `[${request.method}] ${request.url} → ${status}`,
         exception.stack,
       );
+      SentryReporter.capture(exception);
     } else if (status >= 400) {
       this.logger.warn(
         `[${request.method}] ${request.url} → ${status}: ${JSON.stringify(message)}`,
@@ -71,6 +73,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       `[${request.method}] ${request.url} → Unhandled exception`,
       exception instanceof Error ? exception.stack : String(exception),
     );
+
+    SentryReporter.capture(exception);
 
     response.status(status).json({
       statusCode: status,

@@ -3,7 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 import helmet from 'helmet';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { AppModule } from './app.module';
 import {
   HttpExceptionFilter,
@@ -11,10 +11,17 @@ import {
 } from './common/filters/http-exception.filter';
 import { ThrottleExceptionFilter } from './common/filters/throttle-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { SentryReporter } from './sentry/sentry.reporter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const isDev = process.env.NODE_ENV !== 'production';
+
+  // Inicializa Sentry antes do NestJS para capturar erros de boot
+  SentryReporter.initialize(
+    process.env.SENTRY_DSN,
+    process.env.NODE_ENV ?? 'development',
+  );
 
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
@@ -32,14 +39,8 @@ async function bootstrap() {
   );
 
   // ── Prefixo e rotas ───────────────────────────────────────────────────────
-  app.setGlobalPrefix('api/v1');
-
-  app.use('/health', (_req: Request, res: Response) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.end(
-      JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }),
-    );
-  });
+  // /health excluído do prefixo para manter compatibilidade com Railway healthcheckPath
+  app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
   // Webhook Stripe precisa do raw body para validação de assinatura
   app.use(

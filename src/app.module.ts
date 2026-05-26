@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
+import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { CondominiumsModule } from './condominiums/condominiums.module';
 import { ServicesModule } from './services/services.module';
@@ -70,6 +71,7 @@ import { StripeConnectModule } from './stripe-connect/stripe-connect.module';
     }),
 
     AuthModule,
+    HealthModule,
     UsersModule,
     CondominiumsModule,
     ServicesModule,
