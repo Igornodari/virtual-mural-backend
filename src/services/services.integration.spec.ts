@@ -144,7 +144,7 @@ describeIntegration('ServicesService (integração)', () => {
 
   describe('create', () => {
     it('deve persistir um serviço no banco', async () => {
-      const result = await servicesService.create(
+      const result: Service = await servicesService.create(
         {
           name: 'Limpeza',
           description: 'Limpeza completa',
@@ -241,7 +241,7 @@ describeIntegration('ServicesService (integração)', () => {
       await servicesRepo.save(servicesRepo.create(buildService(testProvider.id, testCondo.id)));
       await servicesRepo.save(servicesRepo.create(buildService(outroProvider.id, outroCondo.id)));
 
-      const result = await servicesService.findAll(testCondo.id);
+      const result: Service[] = await servicesService.findAll(testCondo.id);
 
       expect(result.every((s) => s.condominiumId === testCondo.id)).toBe(true);
       expect(result.length).toBe(1);
@@ -253,7 +253,7 @@ describeIntegration('ServicesService (integração)', () => {
         servicesRepo.create(buildService(testProvider.id, testCondo.id, { isActive: false })),
       );
 
-      const result = await servicesService.findAll(testCondo.id);
+      const result: Service[] = await servicesService.findAll(testCondo.id);
 
       expect(result.length).toBe(1);
       expect(result[0].isActive).toBe(true);
@@ -266,7 +266,7 @@ describeIntegration('ServicesService (integração)', () => {
         servicesRepo.create(buildService(testProvider.id, testCondo.id)),
       );
 
-      const result = await servicesService.findOne(saved.id);
+      const result: Service = await servicesService.findOne(saved.id);
 
       expect(result.id).toBe(saved.id);
       expect(result.name).toBe(saved.name);
@@ -285,7 +285,7 @@ describeIntegration('ServicesService (integração)', () => {
         servicesRepo.create(buildService(testProvider.id, testCondo.id)),
       );
 
-      const updated = await servicesService.update(
+      const updated: Service = await servicesService.update(
         saved.id,
         { name: 'Pintura Premium', price: '500.00' },
         testProvider,

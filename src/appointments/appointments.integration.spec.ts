@@ -10,11 +10,11 @@
  */
 
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { Repository } from 'typeorm';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { AppointmentsService } from './appointments.service';
-import { Appointment, AppointmentStatus } from './entities/appointment.entity';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { AppointmentsService, AppointmentWithViewerRole } from './appointments.service';
+import { Appointment } from './entities/appointment.entity';
 import { Payment } from './entities/payment.entity';
 import { Service } from '../services/entities/service.entity';
 import { User } from '../users/entities/user.entity';
@@ -152,7 +152,7 @@ describeIntegration('AppointmentsService (integração)', () => {
 
   describe('create', () => {
     it('deve criar agendamento e persistir no banco', async () => {
-      const result = await appointmentsService.create(
+      const result: Appointment = await appointmentsService.create(
         {
           serviceId: testService.id,
           scheduledDate: '2026-07-15',
@@ -226,7 +226,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         testCustomer,
       );
 
-      const result = await appointmentsService.findMine(testCustomer);
+      const result: AppointmentWithViewerRole[] = await appointmentsService.findMine(testCustomer);
 
       expect(result.length).toBeGreaterThan(0);
       expect(result.every((a) => a.viewerRole === 'customer')).toBe(true);
@@ -242,7 +242,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         testCustomer,
       );
 
-      const result = await appointmentsService.findMine(testProvider);
+      const result: AppointmentWithViewerRole[] = await appointmentsService.findMine(testProvider);
 
       expect(result.length).toBeGreaterThan(0);
       expect(result.every((a) => a.viewerRole === 'provider')).toBe(true);
@@ -263,14 +263,14 @@ describeIntegration('AppointmentsService (integração)', () => {
       );
 
       // testCustomer não fez nenhum agendamento
-      const result = await appointmentsService.findMine(testCustomer);
+      const result: AppointmentWithViewerRole[] = await appointmentsService.findMine(testCustomer);
       expect(result.length).toBe(0);
     });
   });
 
   describe('updateStatus', () => {
     it('deve atualizar status do agendamento', async () => {
-      const appointment = await appointmentsService.create(
+      const appointment: Appointment = await appointmentsService.create(
         {
           serviceId: testService.id,
           scheduledDate: '2026-09-01',
@@ -279,7 +279,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         testCustomer,
       );
 
-      const updated = await appointmentsService.updateStatus(
+      const updated: Appointment = await appointmentsService.updateStatus(
         appointment.id,
         { status: 'confirmed' },
         testProvider,
@@ -292,7 +292,7 @@ describeIntegration('AppointmentsService (integração)', () => {
     });
 
     it('deve lançar ForbiddenException quando usuário não autorizado tenta mudar status', async () => {
-      const appointment = await appointmentsService.create(
+      const appointment: Appointment = await appointmentsService.create(
         {
           serviceId: testService.id,
           scheduledDate: '2026-09-02',
