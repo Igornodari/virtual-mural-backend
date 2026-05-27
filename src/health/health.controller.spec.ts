@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
+import type { Response } from 'express';
 import { HealthController } from './health.controller';
 import { HealthService, HealthReport } from './health.service';
 
@@ -14,6 +15,12 @@ const makeReport = (overrides: Partial<HealthReport> = {}): HealthReport => ({
   },
   ...overrides,
 });
+
+const makeMockRes = (): { res: Response; status: jest.Mock; json: jest.Mock } => {
+  const json = jest.fn();
+  const status = jest.fn().mockReturnValue({ json });
+  return { res: { status } as unknown as Response, status, json };
+};
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -42,11 +49,11 @@ describe('HealthController', () => {
       const report = makeReport();
       healthService.check.mockResolvedValue(report);
 
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+      const { res, status, json } = makeMockRes();
       await controller.check(res);
 
-      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(report);
+      expect(status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(json).toHaveBeenCalledWith(report);
     });
 
     it('should return 200 with status degraded when rabbitmq is down', async () => {
@@ -59,12 +66,12 @@ describe('HealthController', () => {
       });
       healthService.check.mockResolvedValue(report);
 
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+      const { res, status, json } = makeMockRes();
       await controller.check(res);
 
       // Degradado mas ainda acessível — Railway não deve reiniciar o container
-      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(report);
+      expect(status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(json).toHaveBeenCalledWith(report);
     });
 
     it('should return 503 when database is down', async () => {
@@ -77,11 +84,11 @@ describe('HealthController', () => {
       });
       healthService.check.mockResolvedValue(report);
 
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+      const { res, status, json } = makeMockRes();
       await controller.check(res);
 
-      expect(res.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
-      expect(res.json).toHaveBeenCalledWith(report);
+      expect(status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+      expect(json).toHaveBeenCalledWith(report);
     });
   });
 });

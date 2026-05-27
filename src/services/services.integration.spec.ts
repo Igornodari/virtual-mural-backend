@@ -241,7 +241,7 @@ describeIntegration('ServicesService (integração)', () => {
       await servicesRepo.save(servicesRepo.create(buildService(testProvider.id, testCondo.id)));
       await servicesRepo.save(servicesRepo.create(buildService(outroProvider.id, outroCondo.id)));
 
-      const result: Service[] = await servicesService.findAll(testCondo.id);
+      const result: Service[] = await servicesService.findByCondominium(testCondo.id);
 
       expect(result.every((s) => s.condominiumId === testCondo.id)).toBe(true);
       expect(result.length).toBe(1);
@@ -253,7 +253,7 @@ describeIntegration('ServicesService (integração)', () => {
         servicesRepo.create(buildService(testProvider.id, testCondo.id, { isActive: false })),
       );
 
-      const result: Service[] = await servicesService.findAll(testCondo.id);
+      const result: Service[] = await servicesService.findByCondominium(testCondo.id);
 
       expect(result.length).toBe(1);
       expect(result[0].isActive).toBe(true);
@@ -288,7 +288,7 @@ describeIntegration('ServicesService (integração)', () => {
       const updated: Service = await servicesService.update(
         saved.id,
         { name: 'Pintura Premium', price: '500.00' },
-        testProvider,
+        testProvider.id,
       );
 
       expect(updated.name).toBe('Pintura Premium');
@@ -307,7 +307,7 @@ describeIntegration('ServicesService (integração)', () => {
       );
 
       await expect(
-        servicesService.update(saved.id, { name: 'Hack' }, outroProvider),
+        servicesService.update(saved.id, { name: 'Hack' }, outroProvider.id),
       ).rejects.toThrow(ForbiddenException);
     });
   });

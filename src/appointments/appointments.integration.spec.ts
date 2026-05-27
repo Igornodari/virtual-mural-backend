@@ -73,6 +73,7 @@ function buildUser(overrides: Partial<User> & { condominiumId?: string } = {}): 
   };
 }
 
+// availableDays usa nomes completos para que normalizeDay('Terça-feira') === normalizeDay('Terça-feira')
 function buildService(providerId: string, condominiumId: string): Partial<Service> {
   return {
     name: 'Serviço de Teste',
@@ -80,7 +81,15 @@ function buildService(providerId: string, condominiumId: string): Partial<Servic
     price: '100.00',
     contact: '11999999999',
     category: 'Outros',
-    availableDays: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'],
+    availableDays: [
+      'Segunda-feira',
+      'Terça-feira',
+      'Quarta-feira',
+      'Quinta-feira',
+      'Sexta-feira',
+      'Sábado',
+      'Domingo',
+    ],
     availabilitySlots: null,
     isActive: true,
     providerId,
@@ -156,6 +165,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         {
           serviceId: testService.id,
           scheduledDate: '2026-07-15',
+          scheduledDay: 'Quarta-feira',
           scheduledTime: '10:00',
           notes: 'Teste de integração',
         },
@@ -165,25 +175,26 @@ describeIntegration('AppointmentsService (integração)', () => {
       expect(result.id).toBeDefined();
       expect(result.customerId).toBe(testCustomer.id);
       expect(result.serviceId).toBe(testService.id);
-      expect(result.status).toBe('awaiting_payment');
+      expect(result.status).toBe('pending');
 
       const fromDb = await appointmentsRepo.findOne({ where: { id: result.id } });
       expect(fromDb).not.toBeNull();
       expect(fromDb!.scheduledDate).toBe('2026-07-15');
     });
 
-    it('deve publicar evento appointment.created após criar', async () => {
+    it('deve publicar evento appointment.requested após criar', async () => {
       await appointmentsService.create(
         {
           serviceId: testService.id,
-          scheduledDate: '2026-07-20',
+          scheduledDate: '2026-07-21',
+          scheduledDay: 'Terça-feira',
           scheduledTime: '14:00',
         },
         testCustomer,
       );
 
       expect(mockMessaging.publish).toHaveBeenCalledWith(
-        'appointment.created',
+        'appointment.requested',
         expect.objectContaining({ serviceId: testService.id }),
       );
     });
@@ -194,6 +205,7 @@ describeIntegration('AppointmentsService (integração)', () => {
           {
             serviceId: '00000000-0000-0000-0000-000000000000',
             scheduledDate: '2026-07-15',
+            scheduledDay: 'Quarta-feira',
             scheduledTime: '10:00',
           },
           testCustomer,
@@ -207,6 +219,7 @@ describeIntegration('AppointmentsService (integração)', () => {
           {
             serviceId: testService.id,
             scheduledDate: '2026-07-15',
+            scheduledDay: 'Quarta-feira',
             scheduledTime: '10:00',
           },
           testProvider, // prestador tentando agendar seu próprio serviço
@@ -221,6 +234,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         {
           serviceId: testService.id,
           scheduledDate: '2026-08-01',
+          scheduledDay: 'Sábado',
           scheduledTime: '09:00',
         },
         testCustomer,
@@ -237,6 +251,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         {
           serviceId: testService.id,
           scheduledDate: '2026-08-02',
+          scheduledDay: 'Domingo',
           scheduledTime: '11:00',
         },
         testCustomer,
@@ -257,6 +272,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         {
           serviceId: testService.id,
           scheduledDate: '2026-08-03',
+          scheduledDay: 'Segunda-feira',
           scheduledTime: '15:00',
         },
         outroCustomer,
@@ -274,6 +290,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         {
           serviceId: testService.id,
           scheduledDate: '2026-09-01',
+          scheduledDay: 'Terça-feira',
           scheduledTime: '10:00',
         },
         testCustomer,
@@ -282,7 +299,7 @@ describeIntegration('AppointmentsService (integração)', () => {
       const updated: Appointment = await appointmentsService.updateStatus(
         appointment.id,
         { status: 'confirmed' },
-        testProvider,
+        testProvider.id,
       );
 
       expect(updated.status).toBe('confirmed');
@@ -295,7 +312,8 @@ describeIntegration('AppointmentsService (integração)', () => {
       const appointment: Appointment = await appointmentsService.create(
         {
           serviceId: testService.id,
-          scheduledDate: '2026-09-02',
+          scheduledDate: '2026-09-03',
+          scheduledDay: 'Quinta-feira',
           scheduledTime: '10:00',
         },
         testCustomer,
@@ -309,7 +327,7 @@ describeIntegration('AppointmentsService (integração)', () => {
         appointmentsService.updateStatus(
           appointment.id,
           { status: 'confirmed' },
-          outroUser,
+          outroUser.id,
         ),
       ).rejects.toThrow(ForbiddenException);
     });

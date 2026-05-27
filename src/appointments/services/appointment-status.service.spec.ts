@@ -8,9 +8,9 @@ import { AppointmentQueryService } from './appointment-query.service';
 import { AppointmentNotificationService } from './appointment-notification.service';
 import { Appointment } from '../entities/appointment.entity';
 
-type MockRepo<T> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+type MockRepo<T extends object> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
-const createMockRepo = <T>(): MockRepo<T> & {
+const createMockRepo = <T extends object>(): MockRepo<T> & {
   createQueryBuilder: jest.Mock;
 } => ({
   findOne: jest.fn(),
