@@ -100,6 +100,14 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Retorna se a conexão e o canal RabbitMQ estão ativos.
+   * Usado pelo HealthController para checar o status do broker.
+   */
+  isHealthy(): boolean {
+    return this.connection !== null && this.channel !== null;
+  }
+
+  /**
    * Publica uma mensagem na fila com o padrão de roteamento do evento.
    *
    * Retorna `Promise<void>` para compatibilidade com callers que usam

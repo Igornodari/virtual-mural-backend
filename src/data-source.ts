@@ -2,11 +2,14 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 
+import { Appointment } from './appointments/entities/appointment.entity';
+import { Payment } from './appointments/entities/payment.entity';
+import { Condominium } from './condominiums/entities/condominium.entity';
+import { Notification } from './notifications/entities/notification.entity';
+import { PushSubscription } from './notifications/entities/push-subscription.entity';
+import { Review } from './reviews/entities/review.entity';
 import { Service } from './services/entities/service.entity';
 import { User } from './users/entities/user.entity';
-import { Condominium } from './condominiums/entities/condominium.entity';
-import { Appointment } from './appointments/entities/appointment.entity';
-import { Review } from './reviews/entities/review.entity';
 
 function getEnv(name: string): string {
   const value = process.env[name];
@@ -26,7 +29,16 @@ export default new DataSource({
   password: getEnv('DB_PASSWORD'),
   database: getEnv('DB_NAME'),
 
-  entities: [Service, User, Condominium, Appointment, Review],
+  entities: [
+    Appointment,
+    Condominium,
+    Notification,
+    Payment,
+    PushSubscription,
+    Review,
+    Service,
+    User,
+  ],
   migrations: ['src/database/migrations/*.ts'],
 
   synchronize: false,
