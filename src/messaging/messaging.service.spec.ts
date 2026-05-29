@@ -30,9 +30,7 @@ const mockConnection = {
   close: jest.fn().mockResolvedValue(undefined),
 };
 
-jest.mock('amqplib', () => ({
-  connect: jest.fn().mockResolvedValue(mockConnection),
-}));
+jest.mock('amqplib');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +55,24 @@ describe('MessagingService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+
+    // Restaura implementações após clearAllMocks
+    mockChannel.assertExchange.mockResolvedValue(undefined);
+    mockChannel.assertQueue.mockResolvedValue({ queue: 'virtual_mural_queue' });
+    mockChannel.bindQueue.mockResolvedValue(undefined);
+    mockChannel.prefetch.mockResolvedValue(undefined);
+    mockChannel.consume.mockResolvedValue(undefined);
+    mockChannel.sendToQueue.mockReturnValue(true);
+    mockChannel.publish.mockReturnValue(true);
+    mockChannel.close.mockResolvedValue(undefined);
+
+    mockConnection.createChannel.mockResolvedValue(mockChannel);
+    mockConnection.close.mockResolvedValue(undefined);
+
+    // Configura o connect do amqplib (sem factory no jest.mock, feito aqui para evitar hoisting)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const amqp = require('amqplib') as { connect: jest.Mock };
+    amqp.connect.mockResolvedValue(mockConnection);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
