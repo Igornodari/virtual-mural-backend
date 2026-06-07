@@ -74,13 +74,8 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
       this.connection = await amqp.connect(this.url);
       this.channel = await this.connection.createChannel();
 
-      await this.setupDlq();
-      await this.setupMainQueue();
-
-      this.logger.log(`✅ Conectado ao RabbitMQ — fila: "${this.queue}", DLQ: "${this.dlqQueue}"`);
-
-      await this.flushPendingHandlers();
-
+      // Register error/close handlers BEFORE queue setup so errors
+      // during assertQueue don't crash the process as unhandled events.
       this.connection.on('error', (err) => {
         this.logger.error('Erro na conexão RabbitMQ:', (err as Error).message);
       });
@@ -94,6 +89,13 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
           void this.connect();
         }, 5000);
       });
+
+      await this.setupDlq();
+      await this.setupMainQueue();
+
+      this.logger.log(`✅ Conectado ao RabbitMQ — fila: "${this.queue}", DLQ: "${this.dlqQueue}"`);
+
+      await this.flushPendingHandlers();
     } catch (err) {
       this.logger.error(
         `Falha ao conectar ao RabbitMQ (${this.url}): ${(err as Error).message}`,
