@@ -137,10 +137,29 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private async setupMainQueue(): Promise<void> {
     if (!this.channel) return;
 
-    await this.channel.assertQueue(this.queue, {
-      durable: true,
-      arguments: { 'x-dead-letter-exchange': this.dlxExchange },
-    });
+    try {
+      await this.channel.assertQueue(this.queue, {
+        durable: true,
+        arguments: { 'x-dead-letter-exchange': this.dlxExchange },
+      });
+    } catch (err) {
+      const error = err as Error & { code?: number };
+      if (error.code === 406) {
+        this.logger.warn(
+          `Fila "${this.queue}" existe com argumentos diferentes. Recriando com DLQ...`,
+        );
+        // Channel was closed by the error — need a new one
+        this.channel = await this.connection!.createChannel();
+        await this.channel.deleteQueue(this.queue);
+        await this.channel.assertQueue(this.queue, {
+          durable: true,
+          arguments: { 'x-dead-letter-exchange': this.dlxExchange },
+        });
+        this.logger.log(`✅ Fila "${this.queue}" recriada com DLQ.`);
+      } else {
+        throw err;
+      }
+    }
   }
 
   private async disconnect(): Promise<void> {
