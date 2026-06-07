@@ -22,7 +22,10 @@
     "migration:create": "typeorm-ts-node-commonjs migration:create",
     "migration:generate": "typeorm-ts-node-commonjs -d src/data-source.ts migration:generate",
     "migration:run": "typeorm-ts-node-commonjs -d src/data-source.ts migration:run",
-    "migration:revert": "typeorm-ts-node-commonjs -d src/data-source.ts migration:revert"
+    "migration:revert": "typeorm-ts-node-commonjs -d src/data-source.ts migration:revert",
+    "migration:show": "typeorm-ts-node-commonjs -d src/data-source.ts migration:show",
+    "test:integration": "jest --testRegex=\".integration.spec.ts$\" --runInBand --no-coverage",
+    "test:unit": "jest --testRegex=\"(?<!integration)\\.spec\\.ts$\" --no-coverage"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1006.0",
@@ -37,6 +40,7 @@
     "@nestjs/swagger": "^11.2.6",
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@sentry/nestjs": "^10.0.0",
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^0.10.9",
     "class-transformer": "^0.5.1",

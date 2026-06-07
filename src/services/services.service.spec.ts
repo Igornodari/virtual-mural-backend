@@ -40,8 +40,8 @@ const mockService = (): Service =>
     updatedAt: new Date(),
   }) as unknown as Service;
 
-type MockRepo<T> = Partial<Record<keyof Repository<T>, jest.Mock>>;
-const createMockRepo = <T>(): MockRepo<T> => ({
+type MockRepo<T extends object> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+const createMockRepo = <T extends object>(): MockRepo<T> => ({
   find: jest.fn(),
   findOne: jest.fn(),
   create: jest.fn(),

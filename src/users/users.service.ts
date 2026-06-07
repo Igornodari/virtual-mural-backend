@@ -166,19 +166,27 @@ export class UsersService {
   }
 
   /**
+   * LGPD — Consentimento (Art. 7, I da Lei 13.709/2018)
+   * Registra o timestamp de aceite explícito dos Termos de Uso e Política
+   * de Privacidade. Permite re-aceite quando os documentos são atualizados.
+   */
+  async acceptTerms(userId: string): Promise<User> {
+    const user = await this.findById(userId);
+    user.termsAcceptedAt = new Date();
+    return this.usersRepo.save(user);
+  }
+
+  /**
    * LGPD — Direito ao esquecimento (Art. 18, IV da Lei 13.709/2018)
-   * Anonimiza todos os dados pessoais do usuário sem remover o registro,
-   * preservando a integridade referencial do banco (agendamentos, reviews).
+   * Anonimiza todos os dados pessoais do usuário sem remover o registro.
    */
   async deleteAccount(userId: string): Promise<void> {
     const user = await this.findById(userId);
 
-    // Verificar se pode desativar prestador (se for prestador)
     if (user.isProvider) {
       await this.assertCanDeactivateProvider(userId);
     }
 
-    // Anonimização: substituir dados pessoais por valores neutros
     const anonymizedAt = new Date().toISOString();
     user.email = `deleted_${user.id}@anonymous.virtual-mural.com`;
     user.givenName = 'Usuário';
