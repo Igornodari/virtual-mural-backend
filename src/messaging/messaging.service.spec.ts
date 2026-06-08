@@ -6,6 +6,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MessagingService } from './messaging.service';
 
@@ -290,6 +291,62 @@ describe('MessagingService', () => {
         'virtual_mural_dlq',
         expect.any(Function),
       );
+    });
+  });
+
+  // ── Reconexão e segurança de logs ──────────────────────────────────────────
+  describe('reconexão e segurança de logs', () => {
+    const CRED_URL =
+      'amqps://broker_user:SuperSecret123@broker.example.com:5671/vhost';
+    let svc: MessagingService;
+    let errorSpy: jest.SpyInstance;
+    let debugSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const amqp = require('amqplib') as { connect: jest.Mock };
+      amqp.connect.mockRejectedValue(new Error('connect ECONNREFUSED'));
+
+      const config = {
+        get: (key: string, fallback?: string) =>
+          key === 'RABBITMQ_URL' ? CRED_URL : fallback,
+      } as unknown as ConfigService;
+
+      svc = new MessagingService(config);
+
+      const logger = (svc as unknown as { logger: Logger }).logger;
+      errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+      debugSpy = jest.spyOn(logger, 'debug').mockImplementation(() => {});
+      jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      jest.spyOn(logger, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
+
+    it('NÃO vaza a senha da URL nos logs de falha (redige com ***)', async () => {
+      await svc.onModuleInit();
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      const logged = String(errorSpy.mock.calls[0][0]);
+      expect(logged).not.toContain('SuperSecret123');
+      expect(logged).toContain('***');
+    });
+
+    it('rebaixa logs repetidos para debug e reconecta com backoff', async () => {
+      await svc.onModuleInit(); // 1ª falha → error + agenda reconexão
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+
+      // Avança o backoff base (5s) → 2ª tentativa de conexão
+      await jest.advanceTimersByTimeAsync(5_000);
+
+      // Não loga ERROR de novo (evita flood) e usa DEBUG
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(debugSpy).toHaveBeenCalled();
     });
   });
 });
