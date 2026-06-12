@@ -1,10 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -59,6 +61,28 @@ export class CreateServiceDto {
   @ValidateNested({ each: true })
   @Type(() => AvailabilitySlotDto)
   availabilitySlots?: AvailabilitySlotDto[];
+
+  @ApiPropertyOptional({
+    example: 60,
+    description:
+      'Duração estimada do atendimento em minutos. Usada (com a pausa) para gerar os horários disponíveis. Default 60.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  durationMinutes?: number;
+
+  @ApiPropertyOptional({
+    example: 0,
+    description:
+      'Pausa entre atendimentos em minutos (deslocamento/preparo/descanso). Default 0.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  breakBetweenAppointmentsMinutes?: number;
 
   @ApiPropertyOptional({
     description:

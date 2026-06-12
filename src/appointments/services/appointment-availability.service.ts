@@ -15,7 +15,11 @@ import {
   toTimeKey,
 } from '../utils/appointment-date.util';
 
-import { resolveTimeSlotsForDay } from '../utils/appointment-time-slots.util';
+import {
+  getServiceStepMinutes,
+  isSlotBlockedByConfirmed,
+  resolveTimeSlotsForDay,
+} from '../utils/appointment-time-slots.util';
 import { AppointmentQueryService } from './appointment-query.service';
 import { DEFAULT_SERVICE_TIME_SLOTS } from '../constants/appointment-availability.contants';
 import { BLOCKING_APPOINTMENT_STATUSES } from '../constants/appointment-status.contants';
@@ -58,13 +62,11 @@ export class AppointmentAvailabilityService {
       requester.condominiumId &&
       requester.condominiumId === service.condominiumId
     ) {
-      const blockedTimeSlots = await this.findServiceBlockedSlots(serviceId);
+      const confirmedSlots = await this.findServiceBlockedSlots(serviceId);
 
-      const blockedDates = this.buildBlockedDates(service, blockedTimeSlots);
-
-      const blockedSlots = this.appendFullDayBlocks(
-        blockedTimeSlots,
-        blockedDates,
+      const { blockedDates, blockedSlots } = this.expandBlockedIntervals(
+        service,
+        confirmedSlots,
       );
 
       return {
@@ -102,56 +104,59 @@ export class AppointmentAvailabilityService {
       .filter((slot): slot is BlockedSlot => !!slot.date && !!slot.time);
   }
 
-  private buildBlockedDates(
+  /**
+   * Expande cada agendamento confirmado para o INTERVALO ocupado
+   * (duração + pausa). Para cada data, marca como bloqueado todo slot da
+   * grade do dia que se sobrepõe a um horário confirmado. Se TODOS os slots
+   * do dia ficam bloqueados, marca o dia inteiro (time = null).
+   *
+   * É aqui que mora a regra "um confirmado às 09:00 ocupa 09:00–12:00":
+   * o front recebe os slots já filtrados e não precisa conhecer a regra.
+   */
+  private expandBlockedIntervals(
     service: Service,
-    blockedSlots: BlockedSlot[],
-  ): string[] {
-    const groupedByDate = new Map<string, Set<string>>();
+    confirmedSlots: BlockedSlot[],
+  ): { blockedDates: string[]; blockedSlots: BlockedSlot[] } {
+    const stepMinutes = getServiceStepMinutes(service);
 
-    for (const slot of blockedSlots) {
+    const confirmedByDate = new Map<string, string[]>();
+    for (const slot of confirmedSlots) {
       if (!slot.date || !slot.time) {
         continue;
       }
-
-      if (!groupedByDate.has(slot.date)) {
-        groupedByDate.set(slot.date, new Set<string>());
-      }
-
-      groupedByDate.get(slot.date)!.add(slot.time);
+      const list = confirmedByDate.get(slot.date) ?? [];
+      list.push(slot.time);
+      confirmedByDate.set(slot.date, list);
     }
 
-    return Array.from(groupedByDate.entries())
-      .filter(([date, blockedTimes]) => {
-        const dayLabel = getWeekdayLabelFromDateKey(date);
-        const availableTimesForDay = resolveTimeSlotsForDay(service, dayLabel);
+    const blockedDates: string[] = [];
+    const blockedSlots: BlockedSlot[] = [];
 
-        return (
-          availableTimesForDay.length > 0 &&
-          availableTimesForDay.every((time) => blockedTimes.has(time))
-        );
-      })
-      .map(([date]) => date);
-  }
+    for (const [date, confirmedTimes] of Array.from(
+      confirmedByDate.entries(),
+    )) {
+      const dayLabel = getWeekdayLabelFromDateKey(date);
+      const grid = resolveTimeSlotsForDay(service, dayLabel);
 
-  private appendFullDayBlocks(
-    blockedSlots: BlockedSlot[],
-    blockedDates: string[],
-  ): BlockedSlot[] {
-    const result = [...blockedSlots];
+      if (!grid.length) {
+        continue;
+      }
 
-    for (const date of blockedDates) {
-      const alreadyExists = result.some(
-        (slot) => slot.date === date && slot.time === null,
+      const blockedForDay = grid.filter((slotTime) =>
+        isSlotBlockedByConfirmed(slotTime, confirmedTimes, stepMinutes),
       );
 
-      if (!alreadyExists) {
-        result.push({
-          date,
-          time: null,
-        });
+      if (blockedForDay.length === grid.length) {
+        blockedDates.push(date);
+        blockedSlots.push({ date, time: null });
+        continue;
+      }
+
+      for (const slotTime of blockedForDay) {
+        blockedSlots.push({ date, time: slotTime });
       }
     }
 
-    return result;
+    return { blockedDates, blockedSlots };
   }
 }
