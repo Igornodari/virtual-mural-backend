@@ -14,7 +14,11 @@ import { User } from '../../users/entities/user.entity';
 import { CreateAppointmentDto } from '../dto/create-appointment.dto';
 
 import { toDateKey, toTimeKey } from '../utils/appointment-date.util';
-import { normalizeDay } from '../utils/appointment-time-slots.util';
+import {
+  getServiceStepMinutes,
+  isSlotBlockedByConfirmed,
+  normalizeDay,
+} from '../utils/appointment-time-slots.util';
 
 import { AppointmentNotificationService } from './appointment-notification.service';
 import { BLOCKING_APPOINTMENT_STATUSES } from '../constants/appointment-status.contants';
@@ -83,7 +87,10 @@ export class AppointmentCreationService {
         );
       }
 
-      const conflictingAppointment = await manager
+      // Carrega TODOS os confirmados do dia (com lock) e rejeita se o intervalo
+      // do novo agendamento (duração + pausa) se sobrepõe a algum deles. Antes
+      // o bloqueio era só do horário exato, o que permitia atendimentos colados.
+      const confirmedSameDay = await manager
         .getRepository(Appointment)
         .createQueryBuilder('appointment')
         .setLock('pessimistic_write')
@@ -93,17 +100,21 @@ export class AppointmentCreationService {
         .andWhere('appointment.scheduledDate = :scheduledDate', {
           scheduledDate,
         })
-        .andWhere('appointment.scheduledTime = :scheduledTime', {
-          scheduledTime,
-        })
+        .andWhere('appointment.scheduledTime IS NOT NULL')
         .andWhere('appointment.status IN (:...busyStatuses)', {
           busyStatuses: BLOCKING_APPOINTMENT_STATUSES,
         })
-        .getOne();
+        .getMany();
 
-      if (conflictingAppointment) {
+      const confirmedTimes = confirmedSameDay
+        .map((appt) => toTimeKey(appt.scheduledTime))
+        .filter((time): time is string => !!time);
+
+      const stepMinutes = getServiceStepMinutes(service);
+
+      if (isSlotBlockedByConfirmed(scheduledTime, confirmedTimes, stepMinutes)) {
         throw new BadRequestException(
-          'Já existe agendamento confirmado/pago para este dia, horário e serviço.',
+          'Já existe agendamento em horário conflitante para este serviço (considerando a duração e a pausa configuradas).',
         );
       }
 

@@ -150,6 +150,67 @@ describe('AppointmentAvailabilityService', () => {
     ).toBe(true);
   });
 
+  it('expande o intervalo (duração+pausa): 09:00 confirmado bloqueia 09/10/11, mas não 12:00', async () => {
+    const svc = makeService({
+      durationMinutes: 60,
+      breakBetweenAppointmentsMinutes: 120, // passo total 180 min
+    });
+    servicesRepo.findOne.mockResolvedValue(svc);
+
+    appointmentsRepo.createQueryBuilder.mockReturnValue(
+      makeQbRawMock([{ scheduledDate: '2030-12-01', scheduledTime: '09:00' }]),
+    );
+
+    const customer = makeUser({ condominiumId: 'condo-uuid' });
+    const result = (await service.findByService(
+      'service-uuid',
+      customer,
+    )) as Record<string, unknown>;
+
+    const blockedTimes = (
+      result.blockedSlots as Array<{ date: string; time: string | null }>
+    )
+      .filter((s) => s.date === '2030-12-01')
+      .map((s) => s.time);
+
+    expect(blockedTimes).toContain('09:00');
+    expect(blockedTimes).toContain('10:00');
+    expect(blockedTimes).toContain('11:00');
+    expect(blockedTimes).not.toContain('12:00');
+  });
+
+  it('marca o dia inteiro quando todos os horários ficam bloqueados', async () => {
+    const svc = makeService(); // grade = DEFAULT (09..18), passo 60
+    servicesRepo.findOne.mockResolvedValue(svc);
+
+    const allRows = [
+      '09:00',
+      '10:00',
+      '11:00',
+      '12:00',
+      '13:00',
+      '14:00',
+      '15:00',
+      '16:00',
+      '17:00',
+      '18:00',
+    ].map((time) => ({ scheduledDate: '2030-12-01', scheduledTime: time }));
+    appointmentsRepo.createQueryBuilder.mockReturnValue(makeQbRawMock(allRows));
+
+    const customer = makeUser({ condominiumId: 'condo-uuid' });
+    const result = (await service.findByService(
+      'service-uuid',
+      customer,
+    )) as Record<string, unknown>;
+
+    expect(result.blockedDates).toContain('2030-12-01');
+    expect(
+      (
+        result.blockedSlots as Array<{ date: string; time: string | null }>
+      ).some((s) => s.date === '2030-12-01' && s.time === null),
+    ).toBe(true);
+  });
+
   // ── findByService — ForbiddenException ─────────────────────────────────────
 
   it('deve lançar ForbiddenException para morador de condomínio diferente', async () => {

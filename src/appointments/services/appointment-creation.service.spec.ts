@@ -93,6 +93,7 @@ describe('AppointmentCreationService', () => {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     getOne: jest.fn().mockResolvedValue(result),
+    getMany: jest.fn().mockResolvedValue(Array.isArray(result) ? result : []),
   });
 
   beforeEach(async () => {
@@ -237,17 +238,43 @@ describe('AppointmentCreationService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('deve lançar BadRequestException se já existe conflito de agendamento', async () => {
+  it('deve lançar BadRequestException se já existe conflito de agendamento (mesmo horário)', async () => {
     const customer = makeCustomer();
     const svc = makeService();
-    const conflicting = { id: 'appt-existing', status: 'confirmed' };
+    const conflicting = {
+      id: 'appt-existing',
+      status: 'confirmed',
+      scheduledTime: '09:00',
+    };
 
     serviceManagerRepo.findOne.mockResolvedValueOnce(svc);
-    apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock(conflicting));
+    apptManagerRepo.createQueryBuilder.mockReturnValue(
+      makeQbMock([conflicting]),
+    );
 
     await expect(service.create(makeDto() as never, customer)).rejects.toThrow(
       BadRequestException,
     );
+  });
+
+  it('rejeita agendamento DENTRO do intervalo de um confirmado (duração+pausa)', async () => {
+    const customer = makeCustomer();
+    // passo 180: confirmado 09:00 ocupa [09:00, 12:00)
+    const svc = makeService({
+      durationMinutes: 60,
+      breakBetweenAppointmentsMinutes: 120,
+    });
+    serviceManagerRepo.findOne.mockResolvedValueOnce(svc);
+    apptManagerRepo.createQueryBuilder.mockReturnValue(
+      makeQbMock([
+        { id: 'appt-existing', status: 'confirmed', scheduledTime: '09:00' },
+      ]),
+    );
+
+    // 11:00 cai dentro de [09:00, 12:00) → deve conflitar
+    await expect(
+      service.create(makeDto({ scheduledTime: '11:00' }) as never, customer),
+    ).rejects.toThrow(BadRequestException);
   });
 
   // ── create — NotFoundException ──────────────────────────────────────────────

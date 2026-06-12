@@ -22,6 +22,10 @@ const MAX_RETRIES = 3;
 /** Header que rastreia quantas vezes a mensagem foi re-tentada. */
 const RETRY_COUNT_HEADER = 'x-retry-count';
 
+/** Backoff de reconexão: base e teto (evita flood de logs/tentativas). */
+const RECONNECT_BASE_MS = 5_000;
+const RECONNECT_MAX_MS = 300_000; // 5 min
+
 @Injectable()
 export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MessagingService.name);
@@ -44,6 +48,14 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
    */
   private readonly pendingHandlers: ConsumerHandler[] = [];
   private readonly pendingDlqHandlers: DlqHandler[] = [];
+
+  /**
+   * Tentativas consecutivas de reconexão sem sucesso. Usado para o
+   * backoff exponencial e para rebaixar o nível dos logs repetidos
+   * (evita inundar o agregador de logs quando o broker está fora).
+   */
+  private reconnectAttempts = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly config: ConfigService) {
     this.url = config.get<string>(
@@ -74,13 +86,8 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
       this.connection = await amqp.connect(this.url);
       this.channel = await this.connection.createChannel();
 
-      await this.setupDlq();
-      await this.setupMainQueue();
-
-      this.logger.log(`✅ Conectado ao RabbitMQ — fila: "${this.queue}", DLQ: "${this.dlqQueue}"`);
-
-      await this.flushPendingHandlers();
-
+      // Register error/close handlers BEFORE queue setup so errors
+      // during assertQueue don't crash the process as unhandled events.
       this.connection.on('error', (err) => {
         this.logger.error('Erro na conexão RabbitMQ:', (err as Error).message);
       });
@@ -88,20 +95,72 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
         this.channel = null;
         this.connection = null;
         this.logger.warn(
-          'Conexão RabbitMQ encerrada. Tentando reconectar em 5s...',
+          'Conexão RabbitMQ encerrada. Reagendando reconexão...',
         );
-        setTimeout(() => {
-          void this.connect();
-        }, 5000);
+        this.scheduleReconnect();
       });
+
+      await this.setupDlq();
+      await this.setupMainQueue();
+
+      // Conectou — zera o backoff para a próxima eventual queda.
+      this.reconnectAttempts = 0;
+
+      this.logger.log(`✅ Conectado ao RabbitMQ — fila: "${this.queue}", DLQ: "${this.dlqQueue}"`);
+
+      await this.flushPendingHandlers();
     } catch (err) {
-      this.logger.error(
-        `Falha ao conectar ao RabbitMQ (${this.url}): ${(err as Error).message}`,
-      );
-      this.logger.warn('Tentando reconectar em 5s...');
-      setTimeout(() => {
-        void this.connect();
-      }, 5000);
+      const message = (err as Error).message;
+
+      // Loga em ERROR apenas na primeira falha; nas seguintes rebaixa
+      // para DEBUG para não inundar os logs enquanto o broker está fora.
+      // NUNCA inclui a URL crua (contém credenciais) — redige a senha.
+      if (this.reconnectAttempts === 0) {
+        this.logger.error(
+          `Falha ao conectar ao RabbitMQ (${this.redactUrl(this.url)}): ${message}`,
+        );
+      } else {
+        this.logger.debug(
+          `Reconexão ao RabbitMQ ainda falhando (tentativa ${this.reconnectAttempts + 1}): ${message}`,
+        );
+      }
+
+      this.scheduleReconnect();
+    }
+  }
+
+  /**
+   * Agenda a próxima tentativa com backoff exponencial limitado, para
+   * não martelar o broker nem inundar os logs quando ele está fora.
+   */
+  private scheduleReconnect(): void {
+    const delay = Math.min(
+      RECONNECT_BASE_MS * 2 ** this.reconnectAttempts,
+      RECONNECT_MAX_MS,
+    );
+    this.reconnectAttempts += 1;
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+    this.reconnectTimer = setTimeout(() => {
+      void this.connect();
+    }, delay);
+  }
+
+  /**
+   * Remove as credenciais (senha) da URL de conexão antes de logar.
+   * Mantém host/porta/usuário para diagnóstico, mas nunca expõe o secret.
+   */
+  private redactUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      if (parsed.password) {
+        parsed.password = '***';
+      }
+      return parsed.toString();
+    } catch {
+      return 'url-invalida';
     }
   }
 
@@ -137,13 +196,36 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private async setupMainQueue(): Promise<void> {
     if (!this.channel) return;
 
-    await this.channel.assertQueue(this.queue, {
-      durable: true,
-      arguments: { 'x-dead-letter-exchange': this.dlxExchange },
-    });
+    try {
+      await this.channel.assertQueue(this.queue, {
+        durable: true,
+        arguments: { 'x-dead-letter-exchange': this.dlxExchange },
+      });
+    } catch (err) {
+      const error = err as Error & { code?: number };
+      if (error.code === 406) {
+        this.logger.warn(
+          `Fila "${this.queue}" existe com argumentos diferentes. Recriando com DLQ...`,
+        );
+        // Channel was closed by the error — need a new one
+        this.channel = await this.connection!.createChannel();
+        await this.channel.deleteQueue(this.queue);
+        await this.channel.assertQueue(this.queue, {
+          durable: true,
+          arguments: { 'x-dead-letter-exchange': this.dlxExchange },
+        });
+        this.logger.log(`✅ Fila "${this.queue}" recriada com DLQ.`);
+      } else {
+        throw err;
+      }
+    }
   }
 
   private async disconnect(): Promise<void> {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     try {
       await this.channel?.close();
       await this.connection?.close();
