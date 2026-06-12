@@ -42,6 +42,20 @@ export class Service {
     | { day: string; startTime: string; endTime: string }[]
     | null;
 
+  /**
+   * Duração estimada do atendimento, em minutos. Usada (junto com a pausa)
+   * para gerar os horários disponíveis. Default 60 para serviços antigos.
+   */
+  @Column({ default: 60 })
+  durationMinutes: number;
+
+  /**
+   * Pausa entre atendimentos, em minutos (deslocamento/preparo/descanso).
+   * Default 0 para serviços antigos.
+   */
+  @Column({ default: 0 })
+  breakBetweenAppointmentsMinutes: number;
+
   @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
   rating: number;
 
