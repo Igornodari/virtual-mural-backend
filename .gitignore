@@ -28,3 +28,6 @@ Thumbs.db
 
 # Testes
 coverage/
+
+# onp-spec (relatório bruto do test runner — intermediário do verify)
+.spec/verification/raw.json
