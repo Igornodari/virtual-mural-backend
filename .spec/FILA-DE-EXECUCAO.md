@@ -33,11 +33,11 @@ tira nada daqui.
 | 0 | Fronteira do condomínio nos serviços | `integridade-do-mural` | ✅ provado (AC-010..012) |
 | 0 | Fronteira e data no agendamento | `integridade-do-mural` | ✅ provado (AC-013, AC-016) |
 | 0 | Avaliação exige atendimento concluído | `integridade-do-mural` | ✅ provado (AC-014, AC-015) |
-| 0 | Idempotência do webhook do Stripe | `webhook-idempotente` | 🔄 em execução |
-| 0 | Sentry do frontend religado | `observabilidade-do-frontend` | ⬜ próximo |
-| 0 | Remover criptografia decorativa | `observabilidade-do-frontend` | ⬜ próximo |
-| 0 | Remover `console.log` de produção | `observabilidade-do-frontend` | ⬜ próximo |
-| 0 | Papel de administrador e síndico | `papel-de-administrador` | ⬜ fila |
+| 0 | Idempotência do webhook do Stripe | `webhook-idempotente` | ✅ provado (AC-017..020) |
+| 0 | Sentry do frontend religado | `observabilidade-do-frontend` | ✅ provado (AC-021..024) — falta só o valor do DSN |
+| 0 | Remover criptografia decorativa | constituição `P-003` | ✅ removida e proibida |
+| 0 | Remover `console.log` de produção | constituição `P-004` | ✅ removido e proibido |
+| 0 | Papel de administrador e síndico | `papel-de-administrador` | 🔜 próximo |
 | 1 | Estorno e cancelamento | `estorno-de-agendamento` | ⬜ fila |
 | 1 | Taxa da plataforma numa fonte só | `taxa-unica` | ⬜ fila |
 | 1 | Saldo do prestador sem conta Connect | `saldo-sem-connect` | ⬜ fila |
