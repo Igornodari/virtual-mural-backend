@@ -12,8 +12,22 @@ export class CondominiumsService {
     private readonly condominiumsRepo: Repository<Condominium>,
   ) {}
 
-  async create(dto: CreateCondominiumDto): Promise<Condominium> {
-    const condominium = this.condominiumsRepo.create(dto);
+  /**
+   * Criar condomínio segue aberto a qualquer morador autenticado: o onboarding
+   * cria o condomínio quando ele ainda não existe, e fechar isso agora
+   * quebraria o cadastro de quem chega primeiro no prédio.
+   *
+   * O que muda é passar a registrar o autor — sem saber a origem de cada
+   * registro não há como limpar as duplicatas depois.
+   */
+  async create(
+    dto: CreateCondominiumDto,
+    createdById?: string,
+  ): Promise<Condominium> {
+    const condominium = this.condominiumsRepo.create({
+      ...dto,
+      createdById: createdById ?? null,
+    });
     return this.condominiumsRepo.save(condominium);
   }
 

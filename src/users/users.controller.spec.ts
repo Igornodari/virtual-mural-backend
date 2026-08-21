@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ForbiddenException } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { AdminAuthorizationService } from '../common/authorization/admin-authorization.service';
 import { User } from './entities/user.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
@@ -27,11 +29,15 @@ describe('UsersController', () => {
       exportData: jest.fn(),
       deleteAccount: jest.fn(),
       acceptTerms: jest.fn(),
+      findAllByCondominium: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: mockUsersService }],
+      providers: [
+        { provide: UsersService, useValue: mockUsersService },
+        AdminAuthorizationService,
+      ],
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
@@ -130,6 +136,85 @@ describe('UsersController', () => {
 
       expect(usersService.acceptTerms).toHaveBeenCalledWith(user.id);
       expect(result).toEqual(updated);
+    });
+  });
+
+  // ── Listagem de moradores pelo síndico ────────────────────────────────────
+  // feature papel-de-administrador
+
+  describe('listarMoradores', () => {
+    const CONDO_A = 'condo-aaaa-0001';
+    const CONDO_B = 'condo-bbbb-0002';
+
+    const pessoa = (extra: Partial<User> = {}): User =>
+      ({
+        id: 'user-1',
+        condominiumId: CONDO_A,
+        isPlatformAdmin: false,
+        isCondoManager: false,
+        ...extra,
+      }) as unknown as User;
+
+    const moradorDaBase = () =>
+      ({
+        id: 'morador-1',
+        displayName: 'Maria',
+        email: 'maria@example.com',
+        isProvider: true,
+        onboardingCompleted: true,
+        createdAt: new Date('2026-01-01'),
+        cognitoSub: 'sub-secreto',
+        phone: '11999999999',
+      }) as unknown as User;
+
+    it('síndico lista os moradores do próprio condomínio @spec:AC-026', async () => {
+      usersService.findAllByCondominium.mockResolvedValue([moradorDaBase()]);
+
+      const lista = await controller.listarMoradores(
+        CONDO_A,
+        pessoa({ isCondoManager: true }),
+      );
+
+      expect(lista).toHaveLength(1);
+      expect(lista[0]).toMatchObject({ id: 'morador-1', displayName: 'Maria' });
+    });
+
+    it('devolve só o necessário, sem o registro completo @spec:AC-026', async () => {
+      usersService.findAllByCondominium.mockResolvedValue([moradorDaBase()]);
+
+      const lista = await controller.listarMoradores(
+        CONDO_A,
+        pessoa({ isCondoManager: true }),
+      );
+
+      // acesso amplo a dado pessoal precisa de justificativa de finalidade
+      expect(lista[0]).not.toHaveProperty('cognitoSub');
+      expect(lista[0]).not.toHaveProperty('phone');
+    });
+
+    it('síndico não lista moradores de outro condomínio @spec:AC-027', async () => {
+      await expect(
+        controller.listarMoradores(CONDO_B, pessoa({ isCondoManager: true })),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(usersService.findAllByCondominium).not.toHaveBeenCalled();
+    });
+
+    it('morador comum não lista moradores @spec:AC-027', async () => {
+      await expect(
+        controller.listarMoradores(CONDO_A, pessoa()),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('administrador da plataforma lista qualquer condomínio @spec:AC-026', async () => {
+      usersService.findAllByCondominium.mockResolvedValue([]);
+
+      await controller.listarMoradores(
+        CONDO_B,
+        pessoa({ isPlatformAdmin: true, condominiumId: null }),
+      );
+
+      expect(usersService.findAllByCondominium).toHaveBeenCalledWith(CONDO_B);
     });
   });
 });

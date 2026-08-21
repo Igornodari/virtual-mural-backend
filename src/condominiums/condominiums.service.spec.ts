@@ -25,7 +25,9 @@ const mockCondominium = (): Condominium =>
     updatedAt: new Date(),
   }) as unknown as Condominium;
 
-type MockRepo<T extends object> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+type MockRepo<T extends object> = Partial<
+  Record<keyof Repository<T>, jest.Mock>
+>;
 const createMockRepo = <T extends object>(): MockRepo<T> => ({
   find: jest.fn(),
   findOne: jest.fn(),
@@ -71,7 +73,7 @@ describe('CondominiumsService', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = await service.create(dto as any);
 
-      expect(repo.create).toHaveBeenCalledWith(dto);
+      expect(repo.create).toHaveBeenCalledWith({ ...dto, createdById: null });
       expect(repo.save).toHaveBeenCalledWith(condo);
       expect(result).toBe(condo);
     });

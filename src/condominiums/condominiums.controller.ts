@@ -17,6 +17,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AdminAuthorizationService } from '../common/authorization/admin-authorization.service';
+import { User } from '../users/entities/user.entity';
 import { CondominiumsService } from './condominiums.service';
 import { CreateCondominiumDto } from './dto/create-condominium.dto';
 import { UpdateCondominiumDto } from './dto/update-condominium.dto';
@@ -26,12 +29,17 @@ import { UpdateCondominiumDto } from './dto/update-condominium.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('condominiums')
 export class CondominiumsController {
-  constructor(private readonly condominiumsService: CondominiumsService) {}
+  constructor(
+    private readonly condominiumsService: CondominiumsService,
+    private readonly adminAuth: AdminAuthorizationService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Cria um novo condomínio' })
-  create(@Body() dto: CreateCondominiumDto) {
-    return this.condominiumsService.create(dto);
+  create(@Body() dto: CreateCondominiumDto, @CurrentUser() user: User) {
+    // Aberto a morador autenticado — o onboarding depende disso. O autor
+    // passa a ficar registrado para permitir a curadoria da base depois.
+    return this.condominiumsService.create(dto, user.id);
   }
 
   @Get()
@@ -49,17 +57,24 @@ export class CondominiumsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualiza dados de um condomínio' })
+  @ApiOperation({
+    summary: 'Atualiza dados de um condomínio (síndico ou administrador)',
+  })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCondominiumDto,
+    @CurrentUser() user: User,
   ) {
+    this.adminAuth.assertPodeAdministrarCondominio(user, id);
     return this.condominiumsService.update(id, dto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Desativa um condomínio (soft delete)' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
+  @ApiOperation({
+    summary: 'Desativa um condomínio (síndico ou administrador)',
+  })
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    this.adminAuth.assertPodeAdministrarCondominio(user, id);
     return this.condominiumsService.remove(id);
   }
 }

@@ -5,6 +5,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -19,6 +21,7 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
+import { AdminAuthorizationService } from '../common/authorization/admin-authorization.service';
 import { User } from './entities/user.entity';
 import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -28,7 +31,37 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly adminAuth: AdminAuthorizationService,
+  ) {}
+
+  @Get('condominium/:condominiumId')
+  @ApiOperation({
+    summary: 'Lista os moradores de um condomínio (síndico ou administrador)',
+    description:
+      'Devolve apenas identificação e vínculo, não o registro completo do ' +
+      'usuário: acesso amplo a dado pessoal precisa de justificativa de ' +
+      'finalidade sob a LGPD.',
+  })
+  async listarMoradores(
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+    @CurrentUser() user: User,
+  ) {
+    this.adminAuth.assertPodeAdministrarCondominio(user, condominiumId);
+
+    const moradores =
+      await this.usersService.findAllByCondominium(condominiumId);
+
+    return moradores.map((m) => ({
+      id: m.id,
+      displayName: m.displayName,
+      email: m.email,
+      isProvider: m.isProvider,
+      onboardingCompleted: m.onboardingCompleted,
+      createdAt: m.createdAt,
+    }));
+  }
 
   @Get('me')
   @ApiOperation({ summary: 'Retorna o perfil completo do usuário autenticado' })
