@@ -53,6 +53,28 @@ tira nada daqui.
 | 4 | Piso de cobertura na CI | — (config, sem feature) | ⬜ fila |
 | 4 | CSP de Report-Only para bloqueante | — (config, sem feature) | ⬜ fila |
 | 4 | Verificador de segredos na CI | — (config, sem feature) | ⬜ fila |
+| 4 | **Baseline das migrations** — hoje um banco zerado não sobe pela cadeia | `baseline-de-migrations` | ⬜ fila |
+
+## Achado que ainda não virou feature
+
+**As migrations não reconstroem um banco do zero.** Descoberto ao montar o
+ambiente local para testar o estorno:
+
+- Migrations puras falham na primeira — não existe migration que crie as
+  tabelas base. O schema nasceu de `synchronize: true` e o histórico só tem
+  alterações incrementais a partir dali.
+- `synchronize` seguido das migrations também falha: `AddIsProviderToUsers`
+  referencia `roleInCondominium`, coluna que uma migration posterior removeu e
+  que não existe mais nas entidades.
+
+Consequência: o banco de produção não pode ser recriado a partir do código, e
+ambiente novo só sobe com `DB_SYNC=true`, ignorando o histórico. As migrations
+`Ensure...` e `Fix...` que existem no repositório são provavelmente sintoma
+disso.
+
+A saída provável é gerar uma migration de baseline a partir do schema atual e
+marcar as antigas como já aplicadas — mas é mudança de risco sobre o banco de
+produção e precisa de decisão consciente, não de efeito colateral.
 
 ## Fora do meu alcance
 
