@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { IPaymentGateway } from './payment-gateway.interface';
+import { IPaymentGateway, RefundResult } from './payment-gateway.interface';
 import { Appointment } from '../entities/appointment.entity';
 import { AppointmentPaymentResult } from '../dto/create-appointment-payment.dto';
 
@@ -177,5 +177,35 @@ export class StripePaymentGatewayService implements IPaymentGateway {
     }
 
     return Math.round(numericPrice * 100);
+  }
+
+  /**
+   * Estorna integralmente um pagamento.
+   *
+   * Os dois sinalizadores abaixo são o que faz o dinheiro voltar de quem o
+   * recebeu, e não do caixa da plataforma:
+   *
+   * - `reverse_transfer` puxa de volta os 95% já transferidos para a conta
+   *   Connect do prestador. Sem ele, a plataforma devolve o valor cheio ao
+   *   cliente e o prestador fica com a parte dele.
+   * - `refund_application_fee` devolve a comissão retida. Sem ele, a
+   *   plataforma cobra comissão por serviço que não foi prestado.
+   *
+   * Nenhum dos dois gera erro quando esquecido — a diferença só aparece no
+   * extrato, dias depois.
+   */
+  async refundPayment(externalPaymentId: string): Promise<RefundResult> {
+    const refund = await this.stripe.refunds.create({
+      payment_intent: externalPaymentId,
+      reverse_transfer: true,
+      refund_application_fee: true,
+    });
+
+    this.logger.log(
+      `Estorno ${refund.id} criado para o pagamento ${externalPaymentId} ` +
+        `(${refund.amount} centavos)`,
+    );
+
+    return { refundId: refund.id, amountCents: refund.amount };
   }
 }

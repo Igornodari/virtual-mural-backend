@@ -1,0 +1,42 @@
+{
+  "feature": "estorno-de-agendamento",
+  "timestamp": "2026-08-21T17:51:09.514Z",
+  "gitRev": "9370d13",
+  "command": "npm test -- --json --outputFile=.spec/verification/raw.json",
+  "reporter": "jest-json",
+  "exitCode": 0,
+  "testsParsed": 285,
+  "results": {
+    "AC-028": {
+      "status": "pass",
+      "testName": "AppointmentStatusService cancelByCustomer cancela um agendamento pago e estorna @spec:AC-028 cancela um agendamento pago e estorna @spec:AC-028",
+      "method": "jest-json"
+    },
+    "AC-029": {
+      "status": "pass",
+      "testName": "StripePaymentGatewayService — split/transfer (M5) refundPayment reverte a transferência e a taxa da plataforma @spec:AC-029 reverte a transferência e a taxa da plataforma @spec:AC-029",
+      "method": "jest-json"
+    },
+    "AC-030": {
+      "status": "pass",
+      "testName": "AppointmentStatusService cancelByCustomer recusa cancelar pago depois do horário @spec:AC-030 recusa cancelar pago depois do horário @spec:AC-030",
+      "method": "jest-json"
+    },
+    "AC-031": {
+      "status": "pass",
+      "testName": "AppointmentStatusService cancelByCustomer recusa cancelar agendamento pago de outra pessoa @spec:AC-031 recusa cancelar agendamento pago de outra pessoa @spec:AC-031",
+      "method": "jest-json"
+    },
+    "AC-032": {
+      "status": "pass",
+      "testName": "AppointmentStatusService cancelByCustomer marca o pagamento como estornado @spec:AC-032 marca o pagamento como estornado @spec:AC-032",
+      "method": "jest-json"
+    },
+    "AC-033": {
+      "status": "pass",
+      "testName": "AppointmentStatusService cancelByCustomer mantém o agendamento pago quando o estorno falha @spec:AC-033 mantém o agendamento pago quando o estorno falha @spec:AC-033",
+      "method": "jest-json"
+    }
+  },
+  "principles": {}
+}

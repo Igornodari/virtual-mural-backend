@@ -11,7 +11,12 @@ import {
 import { Appointment } from './appointment.entity';
 
 export type PaymentMethod = 'pix' | 'credit_card';
-export type PaymentStatus = 'pending' | 'processing' | 'paid' | 'failed';
+export type PaymentStatus =
+  | 'pending'
+  | 'processing'
+  | 'paid'
+  | 'failed'
+  | 'refunded';
 
 @Entity('payments')
 @Index(['appointmentId', 'externalPaymentId'], { unique: true })
@@ -29,7 +34,10 @@ export class Payment {
   @Column({ type: 'enum', enum: ['pix', 'credit_card'] })
   method: PaymentMethod;
 
-  @Column({ type: 'enum', enum: ['pending', 'processing', 'paid', 'failed'] })
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'processing', 'paid', 'failed', 'refunded'],
+  })
   status: PaymentStatus;
 
   @Column()

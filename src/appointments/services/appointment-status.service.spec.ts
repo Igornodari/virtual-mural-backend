@@ -7,8 +7,11 @@ import { AppointmentStatusService } from './appointment-status.service';
 import { AppointmentQueryService } from './appointment-query.service';
 import { AppointmentNotificationService } from './appointment-notification.service';
 import { Appointment } from '../entities/appointment.entity';
+import { Payment } from '../entities/payment.entity';
 
-type MockRepo<T extends object> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+type MockRepo<T extends object> = Partial<
+  Record<keyof Repository<T>, jest.Mock>
+>;
 
 const createMockRepo = <T extends object>(): MockRepo<T> & {
   createQueryBuilder: jest.Mock;
@@ -42,7 +45,24 @@ describe('AppointmentStatusService', () => {
   let queryService: { findOne: jest.Mock };
   let notificationService: { publishAppointmentStatusChanged: jest.Mock };
 
+  let paymentsRepo: { findOne: jest.Mock; save: jest.Mock };
+  let paymentGateway: { refundPayment: jest.Mock };
+
   beforeEach(async () => {
+    paymentsRepo = {
+      findOne: jest.fn().mockResolvedValue({
+        id: 'payment-1',
+        externalPaymentId: 'pi_123',
+        status: 'paid',
+      }),
+      save: jest.fn((p: unknown) => Promise.resolve(p)),
+    };
+    paymentGateway = {
+      refundPayment: jest
+        .fn()
+        .mockResolvedValue({ refundId: 're_123', amountCents: 10000 }),
+    };
+
     repo = createMockRepo<Appointment>();
     queryService = { findOne: jest.fn() };
     notificationService = {
@@ -58,6 +78,8 @@ describe('AppointmentStatusService', () => {
           provide: AppointmentNotificationService,
           useValue: notificationService,
         },
+        { provide: getRepositoryToken(Payment), useValue: paymentsRepo },
+        { provide: 'PAYMENT_GATEWAY', useValue: paymentGateway },
       ],
     }).compile();
 
@@ -230,13 +252,91 @@ describe('AppointmentStatusService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('deve lançar BadRequestException ao tentar cancelar um agendamento paid', async () => {
+    // ── Cancelamento com estorno ──────────────────────────────────────────
+    // feature estorno-de-agendamento
+    //
+    // O teste anterior aqui aserirava que cancelar um agendamento pago
+    // lançava erro. Esse era o comportamento a corrigir: dinheiro pago não
+    // tinha caminho de volta pelo app.
+
+    it('cancela um agendamento pago e estorna @spec:AC-028', async () => {
       const appointment = makeAppointment({ status: 'paid' });
+      queryService.findOne.mockResolvedValue(appointment);
+      repo.save!.mockResolvedValue({ ...appointment, status: 'cancelled' });
+
+      const resultado = await service.cancelByCustomer(
+        'appt-uuid-1',
+        'customer-uuid',
+      );
+
+      expect(paymentGateway.refundPayment).toHaveBeenCalledWith('pi_123');
+      expect(resultado.status).toBe('cancelled');
+    });
+
+    it('marca o pagamento como estornado @spec:AC-032', async () => {
+      const appointment = makeAppointment({ status: 'paid' });
+      queryService.findOne.mockResolvedValue(appointment);
+      repo.save!.mockResolvedValue({ ...appointment, status: 'cancelled' });
+
+      await service.cancelByCustomer('appt-uuid-1', 'customer-uuid');
+
+      expect(paymentsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'refunded' }),
+      );
+    });
+
+    it('recusa cancelar pago depois do horário @spec:AC-030', async () => {
+      const appointment = makeAppointment({
+        status: 'paid',
+        scheduledDate: '2020-01-01',
+        scheduledTime: '09:00',
+      });
       queryService.findOne.mockResolvedValue(appointment);
 
       await expect(
         service.cancelByCustomer('appt-uuid-1', 'customer-uuid'),
       ).rejects.toThrow(BadRequestException);
+
+      expect(paymentGateway.refundPayment).not.toHaveBeenCalled();
+    });
+
+    it('recusa cancelar agendamento pago de outra pessoa @spec:AC-031', async () => {
+      const appointment = makeAppointment({ status: 'paid' });
+      queryService.findOne.mockResolvedValue(appointment);
+
+      await expect(
+        service.cancelByCustomer('appt-uuid-1', 'outro-uuid'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(paymentGateway.refundPayment).not.toHaveBeenCalled();
+    });
+
+    it('mantém o agendamento pago quando o estorno falha @spec:AC-033', async () => {
+      const appointment = makeAppointment({ status: 'paid' });
+      queryService.findOne.mockResolvedValue(appointment);
+      paymentGateway.refundPayment.mockRejectedValue(
+        new Error('provedor indisponível'),
+      );
+
+      await expect(
+        service.cancelByCustomer('appt-uuid-1', 'customer-uuid'),
+      ).rejects.toThrow();
+
+      // não pode existir agendamento cancelado com o dinheiro retido
+      expect(repo.save).not.toHaveBeenCalled();
+      expect(appointment.status).toBe('paid');
+    });
+
+    it('recusa quando não há pagamento confirmado @spec:AC-033', async () => {
+      const appointment = makeAppointment({ status: 'paid' });
+      queryService.findOne.mockResolvedValue(appointment);
+      paymentsRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.cancelByCustomer('appt-uuid-1', 'customer-uuid'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(repo.save).not.toHaveBeenCalled();
     });
 
     it('deve cancelar um agendamento awaiting_payment', async () => {

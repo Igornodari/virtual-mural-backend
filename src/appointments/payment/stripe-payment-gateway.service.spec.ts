@@ -2,16 +2,20 @@
 jest.mock('stripe', () => {
   const mockPaymentIntents = { create: jest.fn() };
   const mockCheckoutSessions = { create: jest.fn() };
+  const mockRefunds = { create: jest.fn() };
 
   const MockStripe = jest.fn().mockImplementation(() => ({
     paymentIntents: mockPaymentIntents,
     checkout: { sessions: mockCheckoutSessions },
+    refunds: mockRefunds,
   }));
 
   (MockStripe as unknown as Record<string, unknown>).__mockPaymentIntents =
     mockPaymentIntents;
   (MockStripe as unknown as Record<string, unknown>).__mockCheckoutSessions =
     mockCheckoutSessions;
+  (MockStripe as unknown as Record<string, unknown>).__mockRefunds =
+    mockRefunds;
 
   return MockStripe;
 });
@@ -34,6 +38,7 @@ describe('StripePaymentGatewayService — split/transfer (M5)', () => {
   let service: StripePaymentGatewayService;
   let paymentIntents: Record<string, jest.Mock>;
   let checkoutSessions: Record<string, jest.Mock>;
+  let refunds: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -66,8 +71,11 @@ describe('StripePaymentGatewayService — split/transfer (M5)', () => {
       jest.Mock
     >;
 
+    refunds = StripeMock.__mockRefunds as Record<string, jest.Mock>;
+
     paymentIntents.create.mockReset();
     checkoutSessions.create.mockReset();
+    refunds.create.mockReset();
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -180,6 +188,43 @@ describe('StripePaymentGatewayService — split/transfer (M5)', () => {
       await expect(
         service.createPayment(makeAppointment('abc'), 'pix', 'acct_1'),
       ).rejects.toThrow();
+    });
+  });
+
+  // ── Estorno ────────────────────────────────────────────────────────────────
+  // feature estorno-de-agendamento
+
+  describe('refundPayment', () => {
+    beforeEach(() => {
+      refunds.create.mockResolvedValue({ id: 're_123', amount: 10000 });
+    });
+
+    it('reverte a transferência e a taxa da plataforma @spec:AC-029', async () => {
+      await service.refundPayment('pi_123');
+
+      // Sem reverse_transfer a plataforma devolve do próprio bolso e o
+      // prestador fica com os 95%. Sem refund_application_fee a plataforma
+      // cobra comissão por serviço não prestado. Nenhum dos dois dá erro
+      // quando esquecido — por isso os dois são aserido explicitamente.
+      expect(refunds.create).toHaveBeenCalledWith({
+        payment_intent: 'pi_123',
+        reverse_transfer: true,
+        refund_application_fee: true,
+      });
+    });
+
+    it('devolve o identificador e o valor estornado @spec:AC-029', async () => {
+      const resultado = await service.refundPayment('pi_123');
+
+      expect(resultado).toEqual({ refundId: 're_123', amountCents: 10000 });
+    });
+
+    it('propaga a falha do provedor @spec:AC-029', async () => {
+      refunds.create.mockRejectedValue(new Error('cartão já contestado'));
+
+      await expect(service.refundPayment('pi_123')).rejects.toThrow(
+        'cartão já contestado',
+      );
     });
   });
 });
