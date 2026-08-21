@@ -1,0 +1,173 @@
+Summary,Issue Type,Description,Priority,Epic Name,Epic Link,Labels,Original Estimate
+Isolamento e confiança do condomínio,Epic,"Garantir que o mural seja de fato do condomínio: ninguém lê nem escreve dados de um condomínio ao qual não pertence, e a reputação exibida corresponde a serviços realmente contratados.",High,Isolamento e confiança do condomínio,,epico,
+Integridade do dinheiro,Epic,"Existir caminho de volta para o dinheiro, e a comissão cobrada virar margem conhecida e configurável num único lugar.",High,Integridade do dinheiro,,epico,
+Verificação de morador,Epic,Transformar a premissa do produto em fato verificável: o morador comprova que mora no endereço antes de ter acesso completo ao mural.,High,Verificação de morador,,epico,
+Receita e distribuição,Epic,Criar fonte de receita que não dependa da comissão por serviço e levar o app para a Play Store.,High,Receita e distribuição,,epico,
+"Qualidade, UX e dívida técnica",Epic,"Responsividade do funil, cobertura de teste com piso, e a dívida acumulada que não bloqueia mas incomoda.",High,"Qualidade, UX e dívida técnica",,epico,
+Observabilidade e segurança operacional,Epic,Enxergar o que quebra em produção e fechar as exposições operacionais conhecidas.,High,Observabilidade e segurança operacional,,epico,
+"Isolar dados por condomínio nas rotas de serviço, agendamento e avaliação",Story,"[P0-1] Hoje qualquer usuário autenticado lê e escreve dados de qualquer condomínio.
+
+Pontos confirmados no código:
+* GET /services?condominiumId= aceita qualquer identificador (services.controller.ts:44)
+* GET /services/:id não checa vínculo nenhum
+* POST /services aceita condominiumId vindo do corpo da requisição, permitindo publicar em condomínio alheio (services.service.ts:44)
+* A criação de agendamento exige que o usuário tenha condomínio, mas não que seja o mesmo do serviço (appointment-creation.service.ts:42)
+
+Critério de aceite: um usuário do condomínio A recebe 403 ou 404 em toda tentativa de ler ou escrever recurso do condomínio B, por qualquer rota.
+
+Atenção: não aplicar a restrição nas rotas de perfil, termos e onboarding, senão o usuário fica preso antes de se vincular.",Highest,,Isolamento e confiança do condomínio,"seguranca,multi-tenant,backend",3d
+Criar papel de administrador e proteger o CRUD de condomínio,Story,"[P0-2] Não existe nenhum conceito de administrador no sistema. POST, PATCH e DELETE de condomínio exigem apenas estar autenticado (condominiums.controller.ts:31), então qualquer usuário renomeia ou desativa o condomínio de qualquer outro.
+
+Escopo:
+* Papel de administrador da plataforma
+* Papel de síndico, vinculado a um condomínio específico
+* Guard aplicado ao CRUD de condomínio
+
+Este item destrava a fila de revisão manual da verificação de morador (E3) e o plano B2B (E4) — o síndico é o verificador natural e o comprador natural.",Highest,,Isolamento e confiança do condomínio,"seguranca,backend,autorizacao",5d
+Exigir agendamento concluído para avaliar um serviço,Story,"[P0-3] reviews.service.ts:32 só impede avaliação duplicada do mesmo autor. Qualquer usuário autenticado avalia qualquer serviço sem nunca ter contratado nada.
+
+Efeito: nota falsa em massa para inflar a própria reputação ou afundar a do concorrente. Como a nota é o principal sinal de confiança do mural, isso esvazia o valor do produto.
+
+Critério de aceite: criar avaliação sem um agendamento com status 'completed' do próprio autor para aquele serviço responde 403.",Highest,,Isolamento e confiança do condomínio,"confianca,backend",2d
+Bloquear criação de agendamento com data no passado,Bug,"[P0-4] A função hasAppointmentDateTimePassed existe em appointment-date.util.ts:38 e é usada pelos serviços de disponibilidade e de status — mas appointment-creation.service.ts importa apenas toDateKey e toTimeKey (linha 16). A validação de data passada não acontece na criação.
+
+O double-booking já está corretamente tratado com transação e trava pessimista; falta só a checagem de data.
+
+Correção: importar e aplicar a função já existente. Cerca de duas horas, incluindo teste.",High,,Isolamento e confiança do condomínio,"backend,agendamento",2h
+Deduplicar e curar a base de condomínios,Task,"[P2-1] O onboarding busca condomínio por CEP e adota o PRIMEIRO resultado (onboarding.service.ts:160). Um CEP brasileiro cobre uma rua inteira com vários prédios — quem chega primeiro define o condomínio de todo mundo daquele CEP, e quem não encontra cria outro.
+
+A base tende a ser um misto de duplicatas e agrupamentos errados.
+
+Pré-requisito da verificação de morador: a comparação de endereço bate contra este dado. Se ele estiver sujo, a verificação valida contra lixo.",High,,Isolamento e confiança do condomínio,"dados,backend,frontend",5d
+Adicionar número da unidade (apartamento e bloco) ao cadastro,Task,[P2-2] O sistema não sabe em qual unidade a pessoa mora — só a qual condomínio ela diz pertencer. Isso impede a verificação de morador e qualquer conferência contra a lista oficial do síndico.,High,,Isolamento e confiança do condomínio,"backend,frontend",1d
+Implementar estorno e política de cancelamento,Story,"[P1-1] Não existe uma única chamada de reembolso em todo o backend. Depois do pagamento confirmado, cancelar devolve a mensagem de que o assunto 'deve ser tratado diretamente com o prestador' (appointment-status.service.ts:114).
+
+Como o split já transferiu o valor para a conta Connect do prestador, a plataforma fica devendo ao cliente um dinheiro que não tem mais — e é ela quem responde no chargeback, por ser a comerciante do registro.
+
+Escopo: rotina de estorno via Stripe, política de prazo, regra de quem arca com a taxa, e a interface de cancelamento.
+
+Bloqueia a publicação na Play Store e tem implicação de direito de arrependimento (CDC Art. 49).",Highest,,Integridade do dinheiro,"pagamento,juridico,backend,frontend",1sem
+Unificar a taxa da plataforma numa única fonte de configuração,Bug,"[P1-2] A comissão está definida em dois lugares que podem divergir:
+* PLATFORM_FEE_RATE = 0.05 fixo no código (stripe-payment-gateway.service.ts:9)
+* PLATFORM_FEE_PERCENT por variável de ambiente (stripe-connect.service.ts:31)
+
+Mudar a variável de ambiente dá a impressão de ter alterado a comissão — e não altera a cobrança real, que usa a constante fixa.
+
+Já estava no backlog como B2.",High,,Integridade do dinheiro,"pagamento,backend",1d
+Rever o modelo de cobrança para a comissão virar margem,Story,"[P1-3] O split usa cobrança com destino (application_fee_amount + transfer_data.destination). Nesse modelo a plataforma é a comerciante do registro e PAGA a taxa de processamento.
+
+Num serviço de R$ 100: R$ 5 de comissão menos cerca de R$ 4,39 de taxa de cartão deixa cerca de R$ 0,61 — margem de aproximadamente 0,6% do transacionado, não os 5% que a comissão sugere.
+
+Três saídas a avaliar:
+1. Migrar para cobrança direta, em que a conta conectada paga a taxa
+2. Incentivar o Pix na interface — custa uma fração do cartão e o código já suporta
+3. Subir a comissão
+
+Confirmar as taxas reais no painel da conta Stripe antes de decidir.",High,,Integridade do dinheiro,"pagamento,negocio,backend",5d
+Tratar o saldo do prestador sem conta Connect,Story,"[P1-4] Se o prestador não concluiu o cadastro na Stripe, o pagamento é coletado 100% pela plataforma e nenhuma transferência acontece depois (stripe-payment-gateway.service.ts:63). Não existe rotina que quite esse saldo.
+
+A plataforma acumula obrigação com o prestador sem mecanismo de pagamento.
+
+Duas saídas: bloquear a cobrança enquanto não houver conta Connect ativa, ou criar a rotina de repasse com saldo rastreável. A primeira é mais simples e provavelmente suficiente.",High,,Integridade do dinheiro,"pagamento,backend",3d
+Adicionar idempotência ao webhook do Stripe,Bug,"[P0-5] O event.id não é registrado nem consultado (stripe-webhooks.controller.ts:78). A Stripe reenvia eventos por desenho — em falha de rede, timeout ou retentativa manual.
+
+Sem deduplicação, um pagamento pode ser processado duas vezes.
+
+Correção: tabela de eventos processados, consultada antes de agir.",High,,Integridade do dinheiro,"pagamento,backend",1d
+Verificação de morador — Fase 1 (envio e revisão manual),Story,"[P2-3] Especificação completa em .spec/features/verificacao-morador/ com 3 histórias, 9 critérios de aceite em Dado/Quando/Então e 10 tarefas com arquivos mapeados.
+
+Escopo da fase 1:
+* Envio de comprovante de residência com validação por bytes mágicos
+* Armazenamento privado e cifrado, com acesso sempre mediado pelo backend
+* Fila de revisão manual
+* Guard de morador verificado nas rotas do condomínio
+* Descarte automático do arquivo após a decisão (minimização, LGPD Art. 6)
+* Extração de documento atrás de interface, com implementação simulada
+
+Casos que precisam de caminho explícito, sob pena de derrubar o funil: inquilino com conta no nome do proprietário, dependente sem conta própria, e recém-mudado sem conta no endereço novo.
+
+Três decisões de produto estão em aberto na especificação: grandfathering da base atual, quem revisa, e prazo de retenção do documento.",Highest,,Verificação de morador,"produto,backend,frontend,lgpd",3sem
+Liberar a câmera na Permissions-Policy,Task,"[P2-4] O vercel.json define Permissions-Policy: camera=(), o que bloqueia o acesso à câmera. A foto do comprovante de residência precisa dela.
+
+Alteração de uma linha, mas se passar despercebida a feature falha em produção com um erro difícil de diagnosticar.",Medium,,Verificação de morador,"frontend,configuracao",15min
+Verificação de morador — Fase 2 (OCR e comparação automática),Story,"[P2-5] Ligar a extração automática de nome e endereço, a normalização e a comparação por similaridade, com aprovação instantânea no caminho feliz.
+
+A escolha do motor (AWS Textract, Google Document AI ou Tesseract próprio) fica para esta fase, decidida com documentos reais em mãos. Como a fase 1 deixa a extração atrás de interface, a troca é de variável de ambiente.
+
+Os limiares de similaridade são decisão de negócio e precisam ser configuráveis, não fixos no código.",Medium,,Verificação de morador,"produto,backend",2sem
+Destaque pago para prestador,Story,"[P3-1] Primeira receita recorrente e o item de melhor relação esforço/retorno da análise de monetização.
+
+As métricas de engajamento por serviço (clicks, interests, completions, abandonments) já existem no código, o que permite provar o retorno ao prestador com dado real em vez de promessa.
+
+Faixa sugerida: R$ 20 a R$ 50 por mês.
+
+Atenção de política: assinatura para visibilidade DENTRO do app pode ser lida pelo Google como recurso digital e cair no faturamento da loja. Confirmar com o jurídico antes de lançar junto com a publicação na Play Store.",High,,Receita e distribuição,"receita,backend,frontend",1sem
+Service worker de cache e app instalável,Task,"[P3-2] Existe apenas o sw-push.js, que trata push. Sem service worker de cache o app abre em branco sem rede — experiência ruim e motivo comum de avaliação baixa na loja.
+
+Pré-requisito para empacotar como TWA.",Medium,,Receita e distribuição,"pwa,frontend",3d
+Publicar na Play Store como TWA,Story,"[P3-3] Empacotar o site como aplicativo Android via Bubblewrap, sem criar uma segunda base de código.
+
+Boa notícia de política: serviços prestados no mundo real ficam expressamente FORA da obrigação de usar o faturamento do Google. O Stripe pode continuar como está.
+
+Checklist pendente: conta de desenvolvedor (US$ 25, taxa única), formulário de segurança de dados, URL pública de exclusão de conta, e nível de API alvo do ano da publicação.
+
+Bloqueado por P1-1: app que cobra sem caminho de cancelamento e devolução acumula reclamação e vira alvo de remoção.",Medium,,Receita e distribuição,"playstore,frontend",5d
+Plano do condomínio (B2B),Story,"[P3-4] Assinatura paga pelo síndico ou pela administradora, cobrindo o prédio inteiro. Faixa sugerida: R$ 100 a R$ 400 por mês por condomínio.
+
+É o item de maior retorno de toda a análise, por dois motivos: receita recorrente e previsível, e resolve o problema de densidade — um contrato entrega o prédio inteiro de uma vez, e um marketplace de condomínio escala por prédio, não por usuário.
+
+Depende do papel de síndico (P0-2) e da verificação de morador (P2-3), que é o que dá substância à proposta comercial.",High,,Receita e distribuição,"receita,produto,backend",4sem
+Canal de denúncia e moderação de conteúdo,Story,"[P1-5] Conteúdo gerado por usuário (serviço e avaliação) sem caminho de denúncia nem remoção.
+
+Exigido pelas lojas de aplicativo e proteção sob o Marco Civil da Internet, Art. 19. Depende do papel de administrador (P0-2) para haver quem modere.",High,,Receita e distribuição,"juridico,backend,frontend",4d
+Criar tokens e mixins de breakpoint e convergir os valores órfãos,Task,"[P4-1] O projeto usa valores espalhados e inconsistentes: 600, 767, 768, 959, 960, 991, 1024, 1200, 1279. Não há tokens nem mixins.
+
+Hoje uma tela quebra em 767 e a vizinha em 768.
+
+Sugestão: { sm: 600, md: 768, lg: 1024, xl: 1280 }, mantendo 768 que já é o corte entre topbar e bottom-nav. Mixins @include up(md) / down(md).
+
+Fundação que destrava as demais tarefas de responsividade.",High,,"Qualidade, UX e dívida técnica","frontend,ux,scss",3d
+Responsividade do funil que converte em receita,Story,"[P4-2] Explorar, detalhe do serviço, diálogo de agendar e agenda.
+
+Achados da auditoria de responsividade:
+* customer-dashboard: grid minmax(360px,1fr) a partir de 768px pode estourar entre 768 e 820px
+* customer-service-details: nenhuma media query — risco de largura fixa
+* diálogo de agendar: confirmar se vira tela cheia no mobile
+* FullCalendar: costuma estourar largura no celular
+
+Pronto quando: testado em 375, 768, 1024 e 1280, sem scroll horizontal, toques com no mínimo 44px, e estados de carregando, vazio, erro e sucesso presentes.",High,,"Qualidade, UX e dívida técnica","frontend,ux",1sem
+Responsividade das telas de conta,Story,"[P4-3] Perfil, dashboard do prestador e analytics.
+
+* provider-dashboard: stat cards em repeat(2,1fr) ficam apertados em 375px
+* service-analytics: repeat(4,1fr) com fallback só abaixo de 600px deixa quatro colunas espremidas entre 600 e 900px
+* profile: propriedades de layout em SCSS local, migrar para classes globais",Medium,,"Qualidade, UX e dívida técnica","frontend,ux",5d
+Definir piso de cobertura e remover --passWithNoTests,Task,"[P4-4] O Jest não tem coverageThreshold e a CI roda com --passWithNoTests. Na prática a esteira aprova um pacote sem nenhum teste.
+
+Fixar um piso a partir da cobertura atual e subir aos poucos.",High,,"Qualidade, UX e dívida técnica","qualidade,ci",1d
+Promover a CSP de Report-Only para bloqueante,Task,"[P4-5] O vercel.json define Content-Security-Policy-Report-Only. Ela relata violações mas não bloqueia nada — ou seja, hoje não oferece proteção real.
+
+Verificar os relatórios acumulados, ajustar o que for legítimo e trocar para Content-Security-Policy.",Medium,,"Qualidade, UX e dívida técnica","seguranca,frontend",1d
+Completar o dark mode,Story,"[P4-6] O ThemeService existe mas a cobertura pelos componentes é parcial. Estava no backlog como L2, em andamento.",Medium,,"Qualidade, UX e dívida técnica","frontend,ux",5d
+Cache HTTP no frontend,Task,"[P4-7] A listagem de serviços é rechamada a cada navegação, sem ETag nem cache. Backlog L1.",Low,,"Qualidade, UX e dívida técnica","performance,frontend",3d
+Revisar chaves de i18n faltantes,Task,[P4-8] Conferir chaves perdidas após a reorganização de pastas. Backlog L3.,Low,,"Qualidade, UX e dívida técnica","frontend,i18n",4h
+Foto de perfil: importar do Google e permitir upload,Story,"[P4-9] Quando a conta está vinculada ao Google, exibir a foto automaticamente. Permitir também upload de foto própria substituindo a importada. Backlog B12.",Medium,,"Qualidade, UX e dívida técnica","frontend,feature",3d
+Remover snackbars de erro global,Task,"[P4-10] Erro genérico ou inesperado não deve virar snackbar para o usuário. Apenas erro de feedback explícito (validação, ação do usuário) aparece na interface; o resto vai para log e Sentry. Backlog B13.",Medium,,"Qualidade, UX e dívida técnica","frontend,ux",4h
+Corrigir alinhamento do label de WhatsApp,Bug,[P4-11] Texto do campo de WhatsApp fora de alinhamento. Ajuste visual. Backlog B11.,Low,,"Qualidade, UX e dívida técnica","frontend,ux",1h
+Atualizar a versão do app,Task,"[P4-12] package.json está em 0.0.0 e os environments em 0.0.1, com o produto já em produção com pagamento real. Definir a versão que reflete o estágio.",Low,,"Qualidade, UX e dívida técnica",chore,15min
+Religar o Sentry no frontend,Bug,"[P0-6] environments.prod.ts tem sentryDsn vazio, com um comentário mandando configurar por variável de ambiente na Vercel. Mas o Angular embute esse arquivo no momento do build e nada lê variável de ambiente ali.
+
+Resultado: erro de usuário em produção hoje é invisível. O backend está corretamente instrumentado; o frontend não.
+
+Duas horas de trabalho para recuperar a visibilidade inteira do frontend. Estava no backlog como OBS1.",Highest,,Observabilidade e segurança operacional,"observabilidade,frontend",2h
+Remover a criptografia decorativa do navegador,Task,"[P0-7] crypto.service.ts gera a chave AES com Math.random() e a guarda no MESMO localStorage onde fica o texto cifrado. Quem acessa o storage tem os dois.
+
+Proteção real: nenhuma. Pior que isso, passa a sensação de que há proteção, o que leva a guardar coisa que não deveria estar ali.
+
+Remover, e revisar o que estava sendo 'protegido' por ela.",Medium,,Observabilidade e segurança operacional,"seguranca,frontend",2h
+Remover console.log de produção,Bug,[P0-8] base.component.ts:96 loga 'Condominium updated in BaseComponent' com o objeto do condomínio a cada mudança. Dado de usuário não deve aparecer no console em produção. Backlog B4.,Medium,,Observabilidade e segurança operacional,"frontend,seguranca",15min
+Rotacionar a senha do RabbitMQ,Task,"[P0-9] A credencial vazou em texto puro nos logs de produção antes da correção que passou a redigir a senha. Deve ser considerada comprometida.
+
+Rotacionar no CloudAMQP e atualizar RABBITMQ_URL no Railway. Backlog SEC1.",High,,Observabilidade e segurança operacional,"seguranca,devops",2h
+Adicionar verificador de segredos na esteira de CI,Task,"[P4-13] Nada impede hoje que uma chave secreta seja commitada. As chaves públicas no repositório (pk_live, IDs do Cognito) estão corretas — mas uma sk_live seria incidente grave.
+
+Quinze minutos de configuração eliminam a classe inteira do problema.",Medium,,Observabilidade e segurança operacional,"seguranca,ci",15min
