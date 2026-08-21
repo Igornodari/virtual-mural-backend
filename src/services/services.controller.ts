@@ -48,8 +48,7 @@ export class ServicesController {
     @Query('mine') mine?: boolean,
   ) {
     if (mine) return this.servicesService.findByProvider(user.id);
-    const cid = condominiumId ?? user.condominiumId ?? '';
-    return this.servicesService.findByCondominium(cid);
+    return this.servicesService.findByCondominiumForUser(user, condominiumId);
   }
 
   @Get('analytics/me')
@@ -62,8 +61,8 @@ export class ServicesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Retorna detalhes de um serviço com avaliações' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.servicesService.findOne(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.servicesService.findOneForUser(id, user);
   }
 
   @Patch(':id')

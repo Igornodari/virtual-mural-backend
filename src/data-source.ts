@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 
 import { Appointment } from './appointments/entities/appointment.entity';
 import { Payment } from './appointments/entities/payment.entity';
+import { ProcessedWebhookEvent } from './appointments/entities/processed-webhook-event.entity';
 import { Condominium } from './condominiums/entities/condominium.entity';
 import { Notification } from './notifications/entities/notification.entity';
 import { PushSubscription } from './notifications/entities/push-subscription.entity';
@@ -34,6 +35,7 @@ export default new DataSource({
     Condominium,
     Notification,
     Payment,
+    ProcessedWebhookEvent,
     PushSubscription,
     Review,
     Service,

@@ -1,9 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ReviewsService } from './reviews.service';
 import { Review } from './entities/review.entity';
+import { Appointment } from '../appointments/entities/appointment.entity';
 import { ServicesService } from '../services/services.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { User } from '../users/entities/user.entity';
@@ -34,7 +39,9 @@ const mockSvc = (): Service =>
     provider: { email: 'prestador@example.com', displayName: 'Ana' },
   }) as unknown as Service;
 
-type MockRepo<T extends object> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+type MockRepo<T extends object> = Partial<
+  Record<keyof Repository<T>, jest.Mock>
+>;
 const createMockRepo = <T extends object>(): MockRepo<T> => ({
   find: jest.fn(),
   findOne: jest.fn(),
@@ -45,11 +52,15 @@ const createMockRepo = <T extends object>(): MockRepo<T> => ({
 describe('ReviewsService', () => {
   let service: ReviewsService;
   let repo: MockRepo<Review>;
+  let appointmentsRepo: { count: jest.Mock };
   let servicesService: { recalcRating: jest.Mock; findOne: jest.Mock };
   let messagingService: { publish: jest.Mock };
 
   beforeEach(async () => {
     repo = createMockRepo<Review>();
+    // Por padrão o autor concluiu um atendimento — os testes que checam a
+    // trava sobrescrevem para 0.
+    appointmentsRepo = { count: jest.fn().mockResolvedValue(1) };
     servicesService = {
       recalcRating: jest.fn().mockResolvedValue(undefined),
       findOne: jest.fn().mockResolvedValue(mockSvc()),
@@ -60,6 +71,10 @@ describe('ReviewsService', () => {
       providers: [
         ReviewsService,
         { provide: getRepositoryToken(Review), useValue: repo },
+        {
+          provide: getRepositoryToken(Appointment),
+          useValue: appointmentsRepo,
+        },
         { provide: ServicesService, useValue: servicesService },
         { provide: MessagingService, useValue: messagingService },
       ],
@@ -143,6 +158,76 @@ describe('ReviewsService', () => {
       await expect(service.findOne('inexistente')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  // ── Lastro da avaliação ────────────────────────────────────────────────────
+  // feature integridade-do-mural: a nota só vale se veio de quem contratou.
+
+  describe('lastro da avaliação', () => {
+    it('recusa avaliar sem atendimento concluído @spec:AC-014', async () => {
+      appointmentsRepo.count.mockResolvedValue(0);
+
+      await expect(
+        service.create(
+          { serviceId: 'service-uuid', rating: 5 } as never,
+          mockAuthor(),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('não considera agendamento que não foi concluído @spec:AC-014', async () => {
+      appointmentsRepo.count.mockResolvedValue(0);
+
+      await expect(
+        service.create(
+          { serviceId: 'service-uuid', rating: 1 } as never,
+          mockAuthor(),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      // procura especificamente por atendimento concluído do próprio autor
+      expect(appointmentsRepo.count).toHaveBeenCalledWith({
+        where: {
+          serviceId: 'service-uuid',
+          customerId: 'user-uuid',
+          status: 'completed',
+        },
+      });
+    });
+
+    it('permite avaliar depois de um atendimento concluído @spec:AC-015', async () => {
+      appointmentsRepo.count.mockResolvedValue(1);
+      repo.findOne!.mockResolvedValue(null);
+      repo.create!.mockImplementation((r: unknown) => r as Review);
+      repo.save!.mockImplementation((r: unknown) =>
+        Promise.resolve({ ...(r as object), id: 'review-novo' } as Review),
+      );
+
+      const criada = await service.create(
+        { serviceId: 'service-uuid', rating: 5 } as never,
+        mockAuthor(),
+      );
+
+      expect(criada).toHaveProperty('id', 'review-novo');
+    });
+
+    it('recalcula a média do serviço após avaliar @spec:AC-015', async () => {
+      appointmentsRepo.count.mockResolvedValue(1);
+      repo.findOne!.mockResolvedValue(null);
+      repo.create!.mockImplementation((r: unknown) => r as Review);
+      repo.save!.mockImplementation((r: unknown) =>
+        Promise.resolve({ ...(r as object), id: 'review-novo' } as Review),
+      );
+
+      await service.create(
+        { serviceId: 'service-uuid', rating: 4 } as never,
+        mockAuthor(),
+      );
+
+      expect(servicesService.recalcRating).toHaveBeenCalledWith('service-uuid');
     });
   });
 });

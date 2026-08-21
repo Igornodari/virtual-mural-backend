@@ -22,6 +22,8 @@ import Stripe from 'stripe';
 import { StripeWebhooksController } from './stripe-webhooks.controller';
 import { AppointmentsService } from '../services/appointments.service';
 import { StripeConnectService } from '../../stripe-connect/stripe-connect.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { ProcessedWebhookEvent } from '../entities/processed-webhook-event.entity';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -74,6 +76,7 @@ describe('StripeWebhooksController', () => {
     handleStripeCheckoutSessionExpired: jest.Mock;
   };
   let stripeConnectService: { handleAccountUpdated: jest.Mock };
+  let processedEventsRepo: { findOne: jest.Mock; insert: jest.Mock };
   let constructEventMock: jest.Mock;
 
   beforeEach(async () => {
@@ -90,6 +93,12 @@ describe('StripeWebhooksController', () => {
     stripeConnectService = {
       handleAccountUpdated: jest.fn().mockResolvedValue(undefined),
     };
+    // Por padrão o evento nunca foi visto — os testes de reentrega
+    // sobrescrevem o findOne.
+    processedEventsRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      insert: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [StripeWebhooksController],
@@ -101,6 +110,10 @@ describe('StripeWebhooksController', () => {
         {
           provide: StripeConnectService,
           useValue: stripeConnectService,
+        },
+        {
+          provide: getRepositoryToken(ProcessedWebhookEvent),
+          useValue: processedEventsRepo,
         },
         {
           provide: ConfigService,
@@ -305,5 +318,113 @@ describe('StripeWebhooksController', () => {
       appointmentsService.handleStripePaymentSucceeded,
     ).not.toHaveBeenCalled();
     expect(stripeConnectService.handleAccountUpdated).not.toHaveBeenCalled();
+  });
+
+  // ── Idempotência ───────────────────────────────────────────────────────────
+  // feature webhook-idempotente: a Stripe reentrega o mesmo evento por desenho.
+
+  describe('idempotência', () => {
+    it('processa e registra um evento novo @spec:AC-017', async () => {
+      const event = makeEvent('payment_intent.succeeded', { id: 'pi_123' });
+      constructEventMock.mockReturnValue(event);
+      processedEventsRepo.findOne.mockResolvedValue(null);
+
+      const res = makeRes();
+      await controller.handleStripeWebhook(makeReq() as never, res as never);
+
+      expect(
+        appointmentsService.handleStripePaymentSucceeded,
+      ).toHaveBeenCalledWith('pi_123');
+      expect(processedEventsRepo.insert).toHaveBeenCalledWith({
+        eventId: 'evt_test',
+        eventType: 'payment_intent.succeeded',
+      });
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('ignora um evento já processado @spec:AC-018', async () => {
+      const event = makeEvent('payment_intent.succeeded', { id: 'pi_123' });
+      constructEventMock.mockReturnValue(event);
+      processedEventsRepo.findOne.mockResolvedValue({
+        eventId: 'evt_test',
+        eventType: 'payment_intent.succeeded',
+        processedAt: new Date('2026-08-01T10:00:00Z'),
+      });
+
+      const res = makeRes();
+      await controller.handleStripeWebhook(makeReq() as never, res as never);
+
+      expect(
+        appointmentsService.handleStripePaymentSucceeded,
+      ).not.toHaveBeenCalled();
+      expect(processedEventsRepo.insert).not.toHaveBeenCalled();
+    });
+
+    it('responde 200 na reentrega para a Stripe parar de reenviar @spec:AC-018', async () => {
+      constructEventMock.mockReturnValue(makeEvent('payment_intent.succeeded'));
+      processedEventsRepo.findOne.mockResolvedValue({
+        eventId: 'evt_test',
+        eventType: 'payment_intent.succeeded',
+        processedAt: new Date(),
+      });
+
+      const res = makeRes();
+      await controller.handleStripeWebhook(makeReq() as never, res as never);
+
+      // 200 e não 4xx: erro faria a Stripe reentregar de novo.
+      expect(res.status).not.toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        received: true,
+        duplicate: true,
+      });
+    });
+
+    it('não registra evento com assinatura inválida @spec:AC-019', async () => {
+      constructEventMock.mockImplementation(() => {
+        throw new Error('assinatura inválida');
+      });
+
+      const res = makeRes();
+      await controller.handleStripeWebhook(makeReq() as never, res as never);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      // o registro nunca é tocado por evento não autenticado
+      expect(processedEventsRepo.findOne).not.toHaveBeenCalled();
+      expect(processedEventsRepo.insert).not.toHaveBeenCalled();
+    });
+
+    it('não marca como processado quando o handler falha @spec:AC-020', async () => {
+      constructEventMock.mockReturnValue(
+        makeEvent('payment_intent.succeeded', { id: 'pi_123' }),
+      );
+      processedEventsRepo.findOne.mockResolvedValue(null);
+      appointmentsService.handleStripePaymentSucceeded.mockRejectedValue(
+        new Error('banco fora do ar'),
+      );
+
+      const res = makeRes();
+      await expect(
+        controller.handleStripeWebhook(makeReq() as never, res as never),
+      ).rejects.toThrow('banco fora do ar');
+
+      // sem registro, a próxima reentrega tenta de novo
+      expect(processedEventsRepo.insert).not.toHaveBeenCalled();
+    });
+
+    it('não derruba a resposta se o registro colidir @spec:AC-017', async () => {
+      constructEventMock.mockReturnValue(
+        makeEvent('payment_intent.succeeded', { id: 'pi_123' }),
+      );
+      processedEventsRepo.findOne.mockResolvedValue(null);
+      // entrega concorrente: o outro já inseriu
+      processedEventsRepo.insert.mockRejectedValue(
+        new Error('duplicate key value violates unique constraint'),
+      );
+
+      const res = makeRes();
+      await controller.handleStripeWebhook(makeReq() as never, res as never);
+
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
   });
 });

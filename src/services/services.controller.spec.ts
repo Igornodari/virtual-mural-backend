@@ -34,8 +34,10 @@ describe('ServicesController', () => {
     const mockServicesService: Partial<jest.Mocked<ServicesService>> = {
       create: jest.fn(),
       findByCondominium: jest.fn(),
+      findByCondominiumForUser: jest.fn(),
       findByProvider: jest.fn(),
       findOne: jest.fn(),
+      findOneForUser: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
       trackMetric: jest.fn(),
@@ -78,25 +80,28 @@ describe('ServicesController', () => {
       const user = mockUser();
       const services = [mockService()];
 
-      servicesService.findByCondominium.mockResolvedValue(services);
+      servicesService.findByCondominiumForUser.mockResolvedValue(services);
 
       const result = await controller.findAll(user);
 
-      expect(servicesService.findByCondominium).toHaveBeenCalledWith(
-        'cond-uuid-1',
+      expect(servicesService.findByCondominiumForUser).toHaveBeenCalledWith(
+        user,
+        undefined,
       );
       expect(result).toEqual(services);
     });
 
-    it('deve buscar por condominiumId quando informado via query', async () => {
+    it('repassa o condomínio informado para a checagem de fronteira @spec:AC-010', async () => {
       const user = mockUser();
       const services = [mockService()];
 
-      servicesService.findByCondominium.mockResolvedValue(services);
+      servicesService.findByCondominiumForUser.mockResolvedValue(services);
 
       await controller.findAll(user, 'outro-cond-id');
 
-      expect(servicesService.findByCondominium).toHaveBeenCalledWith(
+      // O controller não decide: quem recusa condomínio alheio é o service.
+      expect(servicesService.findByCondominiumForUser).toHaveBeenCalledWith(
+        user,
         'outro-cond-id',
       );
     });
@@ -135,14 +140,18 @@ describe('ServicesController', () => {
   // ── GET /services/:id ─────────────────────────────────────────────────────
 
   describe('findOne', () => {
-    it('deve retornar o serviço pelo id', async () => {
+    it('deve retornar o serviço pelo id, escopado ao condomínio @spec:AC-011', async () => {
       const service = mockService();
+      const user = mockUser();
 
-      servicesService.findOne.mockResolvedValue(service);
+      servicesService.findOneForUser.mockResolvedValue(service);
 
-      const result = await controller.findOne(service.id);
+      const result = await controller.findOne(service.id, user);
 
-      expect(servicesService.findOne).toHaveBeenCalledWith(service.id);
+      expect(servicesService.findOneForUser).toHaveBeenCalledWith(
+        service.id,
+        user,
+      );
       expect(result).toEqual(service);
     });
   });

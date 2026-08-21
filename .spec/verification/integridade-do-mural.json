@@ -1,0 +1,47 @@
+{
+  "feature": "integridade-do-mural",
+  "timestamp": "2026-08-21T16:04:32.987Z",
+  "gitRev": "c3e63fd",
+  "command": "npm test -- --json --outputFile=.spec/verification/raw.json",
+  "reporter": "jest-json",
+  "exitCode": 0,
+  "testsParsed": 271,
+  "results": {
+    "AC-010": {
+      "status": "pass",
+      "testName": "ServicesController findAll repassa o condomínio informado para a checagem de fronteira @spec:AC-010 repassa o condomínio informado para a checagem de fronteira @spec:AC-010",
+      "method": "jest-json"
+    },
+    "AC-011": {
+      "status": "pass",
+      "testName": "ServicesController findOne deve retornar o serviço pelo id, escopado ao condomínio @spec:AC-011 deve retornar o serviço pelo id, escopado ao condomínio @spec:AC-011",
+      "method": "jest-json"
+    },
+    "AC-012": {
+      "status": "pass",
+      "testName": "ServicesService — fronteira do condomínio recusa publicar serviço em condomínio alheio @spec:AC-012 recusa publicar serviço em condomínio alheio @spec:AC-012",
+      "method": "jest-json"
+    },
+    "AC-013": {
+      "status": "pass",
+      "testName": "AppointmentCreationService integridade do mural recusa agendar serviço de outro condomínio @spec:AC-013 recusa agendar serviço de outro condomínio @spec:AC-013",
+      "method": "jest-json"
+    },
+    "AC-014": {
+      "status": "pass",
+      "testName": "ReviewsService lastro da avaliação recusa avaliar sem atendimento concluído @spec:AC-014 recusa avaliar sem atendimento concluído @spec:AC-014",
+      "method": "jest-json"
+    },
+    "AC-015": {
+      "status": "pass",
+      "testName": "ReviewsService lastro da avaliação permite avaliar depois de um atendimento concluído @spec:AC-015 permite avaliar depois de um atendimento concluído @spec:AC-015",
+      "method": "jest-json"
+    },
+    "AC-016": {
+      "status": "pass",
+      "testName": "AppointmentCreationService integridade do mural recusa agendamento com data e horário já passados @spec:AC-016 recusa agendamento com data e horário já passados @spec:AC-016",
+      "method": "jest-json"
+    }
+  },
+  "principles": {}
+}

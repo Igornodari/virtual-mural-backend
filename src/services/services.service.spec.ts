@@ -40,7 +40,9 @@ const mockService = (): Service =>
     updatedAt: new Date(),
   }) as unknown as Service;
 
-type MockRepo<T extends object> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+type MockRepo<T extends object> = Partial<
+  Record<keyof Repository<T>, jest.Mock>
+>;
 const createMockRepo = <T extends object>(): MockRepo<T> => ({
   find: jest.fn(),
   findOne: jest.fn(),
@@ -240,5 +242,140 @@ describe('ServicesService', () => {
         service.getAnalytics(svc.id, 'outro-user-id'),
       ).rejects.toThrow(ForbiddenException);
     });
+  });
+});
+
+/**
+ * Fronteira do condomínio — feature integridade-do-mural.
+ * O mural é do prédio: morador do condomínio A não lê nem escreve nada do B.
+ */
+describe('ServicesService — fronteira do condomínio', () => {
+  let service: ServicesService;
+  let repo: {
+    find: jest.Mock;
+    findOne: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+  };
+
+  const CONDO_A = 'condo-aaaa-0001';
+  const CONDO_B = 'condo-bbbb-0002';
+
+  const moradorDoA = (extra: Partial<User> = {}): User =>
+    ({
+      id: 'user-do-a',
+      condominiumId: CONDO_A,
+      isProvider: true,
+      ...extra,
+    }) as unknown as User;
+
+  const servicoDoB = (): Service =>
+    ({
+      id: 'service-do-b',
+      name: 'Faxina',
+      condominiumId: CONDO_B,
+      providerId: 'outro-prestador',
+      isActive: true,
+    }) as unknown as Service;
+
+  beforeEach(async () => {
+    repo = {
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn(),
+      create: jest.fn((dto: unknown) => dto as Service),
+      save: jest.fn((s: unknown) => Promise.resolve(s as Service)),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ServicesService,
+        { provide: getRepositoryToken(Service), useValue: repo },
+        { provide: MessagingService, useValue: { publish: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<ServicesService>(ServicesService);
+  });
+
+  it('recusa listar serviços de outro condomínio @spec:AC-010', async () => {
+    await expect(
+      service.findByCondominiumForUser(moradorDoA(), CONDO_B),
+    ).rejects.toThrow(ForbiddenException);
+
+    // e não chegou a consultar o banco
+    expect(repo.find).not.toHaveBeenCalled();
+  });
+
+  it('lista o próprio condomínio quando nenhum é informado @spec:AC-010', async () => {
+    await service.findByCondominiumForUser(moradorDoA());
+
+    expect(repo.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { condominiumId: CONDO_A, isActive: true },
+      }),
+    );
+  });
+
+  it('recusa abrir um serviço de outro condomínio @spec:AC-011', async () => {
+    repo.findOne.mockResolvedValue(servicoDoB());
+
+    await expect(
+      service.findOneForUser('service-do-b', moradorDoA()),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('permite abrir um serviço do próprio condomínio @spec:AC-011', async () => {
+    repo.findOne.mockResolvedValue({
+      ...servicoDoB(),
+      condominiumId: CONDO_A,
+    } as unknown as Service);
+
+    const encontrado = await service.findOneForUser(
+      'service-do-a',
+      moradorDoA(),
+    );
+
+    expect(encontrado.condominiumId).toBe(CONDO_A);
+  });
+
+  it('recusa publicar serviço em condomínio alheio @spec:AC-012', async () => {
+    await expect(
+      service.create(
+        {
+          name: 'Faxina',
+          condominiumId: CONDO_B,
+          availableDays: ['segunda'],
+        } as never,
+        moradorDoA(),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+
+    expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  it('publica no próprio condomínio ignorando ausência do campo @spec:AC-012', async () => {
+    const criado = await service.create(
+      { name: 'Faxina', availableDays: ['segunda'] } as never,
+      moradorDoA(),
+    );
+
+    expect(criado.condominiumId).toBe(CONDO_A);
+  });
+
+  it('nega quando o usuário não tem condomínio @spec:AC-010', async () => {
+    await expect(
+      service.findByCondominiumForUser(moradorDoA({ condominiumId: null })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('nega quando o serviço não tem condomínio @spec:AC-011', async () => {
+    repo.findOne.mockResolvedValue({
+      ...servicoDoB(),
+      condominiumId: null,
+    } as unknown as Service);
+
+    await expect(
+      service.findOneForUser('service-sem-condo', moradorDoA()),
+    ).rejects.toThrow(ForbiddenException);
   });
 });

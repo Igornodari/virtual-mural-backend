@@ -287,4 +287,78 @@ describe('AppointmentCreationService', () => {
       NotFoundException,
     );
   });
+
+  // ── Fronteira do condomínio e data no passado ──────────────────────────────
+  // feature integridade-do-mural
+
+  describe('integridade do mural', () => {
+    it('recusa agendar serviço de outro condomínio @spec:AC-013', async () => {
+      serviceManagerRepo.findOne.mockResolvedValue(
+        makeService({ condominiumId: 'outro-condo-uuid' }),
+      );
+      apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock([]));
+
+      await expect(
+        service.create(makeDto() as never, makeCustomer()),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(apptManagerRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('recusa quando o serviço não tem condomínio @spec:AC-013', async () => {
+      serviceManagerRepo.findOne.mockResolvedValue(
+        makeService({ condominiumId: null as never }),
+      );
+      apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock([]));
+
+      await expect(
+        service.create(makeDto() as never, makeCustomer()),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('permite agendar serviço do mesmo condomínio @spec:AC-013', async () => {
+      serviceManagerRepo.findOne.mockResolvedValue(makeService());
+      apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock([]));
+      apptManagerRepo.create.mockImplementation((a: unknown) => a);
+      apptManagerRepo.save.mockImplementation((a: unknown) =>
+        Promise.resolve({ ...(a as object), id: 'appt-uuid' }),
+      );
+
+      const criado = await service.create(makeDto() as never, makeCustomer());
+
+      expect(criado).toHaveProperty('id', 'appt-uuid');
+    });
+
+    it('recusa agendamento com data e horário já passados @spec:AC-016', async () => {
+      serviceManagerRepo.findOne.mockResolvedValue(makeService());
+      apptManagerRepo.createQueryBuilder.mockReturnValue(makeQbMock([]));
+
+      await expect(
+        service.create(
+          makeDto({
+            scheduledDate: '2020-01-01',
+            scheduledTime: '09:00',
+          }) as never,
+          makeCustomer(),
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('recusa data passada antes de tocar no banco @spec:AC-016', async () => {
+      serviceManagerRepo.findOne.mockResolvedValue(makeService());
+
+      await expect(
+        service.create(
+          makeDto({
+            scheduledDate: '2020-01-01',
+            scheduledTime: '09:00',
+          }) as never,
+          makeCustomer(),
+        ),
+      ).rejects.toThrow(BadRequestException);
+
+      // a transação nem chega a abrir — não segura trava à toa
+      expect(appointmentsRepo.manager.transaction).not.toHaveBeenCalled();
+    });
+  });
 });

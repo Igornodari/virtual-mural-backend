@@ -13,7 +13,11 @@ import { User } from '../../users/entities/user.entity';
 
 import { CreateAppointmentDto } from '../dto/create-appointment.dto';
 
-import { toDateKey, toTimeKey } from '../utils/appointment-date.util';
+import {
+  hasAppointmentDateTimePassed,
+  toDateKey,
+  toTimeKey,
+} from '../utils/appointment-date.util';
 import {
   getServiceStepMinutes,
   isSlotBlockedByConfirmed,
@@ -56,6 +60,14 @@ export class AppointmentCreationService {
       throw new BadRequestException('Horário do agendamento é obrigatório.');
     }
 
+    // Antes de abrir transação: recusar horário que já passou. A função já
+    // existia no util e era usada por disponibilidade e status, mas não aqui.
+    if (hasAppointmentDateTimePassed(scheduledDate, scheduledTime)) {
+      throw new BadRequestException(
+        'Não é possível agendar para uma data e horário que já passaram.',
+      );
+    }
+
     return this.appointmentsRepo.manager.transaction(async (manager) => {
       const service = await manager.getRepository(Service).findOne({
         where: { id: dto.serviceId },
@@ -72,6 +84,17 @@ export class AppointmentCreationService {
       if (service.providerId === customer.id) {
         throw new ForbiddenException(
           'Você não pode agendar seu próprio serviço.',
+        );
+      }
+
+      // Fronteira do condomínio: o mural é do prédio. Ter um condomínio não
+      // basta — precisa ser o mesmo do serviço.
+      if (
+        !service.condominiumId ||
+        service.condominiumId !== customer.condominiumId
+      ) {
+        throw new ForbiddenException(
+          'Este serviço não pertence ao seu condomínio.',
         );
       }
 
@@ -112,7 +135,9 @@ export class AppointmentCreationService {
 
       const stepMinutes = getServiceStepMinutes(service);
 
-      if (isSlotBlockedByConfirmed(scheduledTime, confirmedTimes, stepMinutes)) {
+      if (
+        isSlotBlockedByConfirmed(scheduledTime, confirmedTimes, stepMinutes)
+      ) {
         throw new BadRequestException(
           'Já existe agendamento em horário conflitante para este serviço (considerando a duração e a pausa configuradas).',
         );

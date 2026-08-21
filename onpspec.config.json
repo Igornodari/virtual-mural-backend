@@ -1,0 +1,15 @@
+{
+  "testCommand": "npm test -- --json --outputFile=.spec/verification/raw.json",
+  "reporter": "jest-json",
+  "reporterOutputFile": ".spec/verification/raw.json",
+  "testGlobs": [
+    "test/**",
+    "tests/**",
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "__tests__/**"
+  ],
+  "srcGlobs": [
+    "src/**"
+  ]
+}
