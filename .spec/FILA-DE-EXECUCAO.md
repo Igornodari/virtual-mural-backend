@@ -37,11 +37,11 @@ tira nada daqui.
 | 0 | Sentry do frontend religado | `observabilidade-do-frontend` | ✅ provado (AC-021..024) — falta só o valor do DSN |
 | 0 | Remover criptografia decorativa | constituição `P-003` | ✅ removida e proibida |
 | 0 | Remover `console.log` de produção | constituição `P-004` | ✅ removido e proibido |
-| 0 | Papel de administrador e síndico | `papel-de-administrador` | 🔜 próximo |
+| 0 | Papel de administrador e síndico | `papel-de-administrador` | ✅ provado (AC-021..027) |
 | 1 | Estorno e cancelamento | `estorno-de-agendamento` | ⬜ fila |
 | 1 | Taxa da plataforma numa fonte só | `taxa-unica` | ⬜ fila |
 | 1 | Saldo do prestador sem conta Connect | `saldo-sem-connect` | ⬜ fila |
-| 1 | Denúncia e moderação | `moderacao-de-conteudo` | ⬜ fila (depende de admin) |
+| 1 | Denúncia e moderação | `moderacao-de-conteudo` | 🔜 desbloqueada — reusa AdminAuthorizationService |
 | 2 | Base de condomínios deduplicada | `curadoria-de-condominios` | ⬜ fila |
 | 2 | Número da unidade no cadastro | `verificacao-morador` (T-001) | ⬜ fila |
 | 2 | Verificação de morador — fase 1 | `verificacao-morador` | ⬜ especificada, não construída |

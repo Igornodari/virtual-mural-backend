@@ -1,0 +1,125 @@
+{
+  "feature": "papel-de-administrador",
+  "agent": "claude",
+  "geradoEm": "2026-08-21 17:34",
+  "branchTrabalho": "spec/papel-de-administrador",
+  "baseDir": ".spec/features/papel-de-administrador",
+  "specDir": ".spec",
+  "repoName": "virtual-mural-backend",
+  "logsDir": "../onp-worktrees/virtual-mural-backend-papel-de-administrador-logs",
+  "ondas": [
+    [
+      "faixa-1",
+      "faixa-2",
+      "faixa-3"
+    ],
+    [
+      "faixa-4"
+    ]
+  ],
+  "faixas": [
+    {
+      "id": "faixa-1",
+      "branch": "spec/papel-de-administrador-faixa-1",
+      "worktree": "../onp-worktrees/virtual-mural-backend-papel-de-administrador-faixa-1",
+      "tarefas": [
+        {
+          "id": "T-016",
+          "titulo": "Papéis no modelo de usuário",
+          "modelo": "claude-sonnet-5",
+          "esforco": "medium",
+          "arquivos": [
+            "src/users/entities/user.entity.ts",
+            "src/condominiums/entities/condominium.entity.ts",
+            "src/database/migrations/1790200000000-AddAdminRoles.ts"
+          ],
+          "refs": [
+            "US-011",
+            "US-012",
+            "AC-021",
+            "AC-025"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faixa-2",
+      "branch": "spec/papel-de-administrador-faixa-2",
+      "worktree": "../onp-worktrees/virtual-mural-backend-papel-de-administrador-faixa-2",
+      "tarefas": [
+        {
+          "id": "T-017",
+          "titulo": "Serviço de autorização administrativa",
+          "modelo": "claude-sonnet-5",
+          "esforco": "medium",
+          "arquivos": [
+            "src/common/authorization/admin-authorization.service.ts",
+            "src/common/authorization/admin-authorization.service.spec.ts"
+          ],
+          "refs": [
+            "US-011",
+            "AC-021",
+            "AC-022",
+            "AC-023",
+            "AC-024"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faixa-3",
+      "branch": "spec/papel-de-administrador-faixa-3",
+      "worktree": "../onp-worktrees/virtual-mural-backend-papel-de-administrador-faixa-3",
+      "tarefas": [
+        {
+          "id": "T-018",
+          "titulo": "Proteção do CRUD de condomínio",
+          "modelo": "claude-sonnet-5",
+          "esforco": "medium",
+          "arquivos": [
+            "src/condominiums/condominiums.controller.ts",
+            "src/condominiums/condominiums.service.ts",
+            "src/condominiums/condominiums.controller.spec.ts",
+            "src/condominiums/condominiums.service.spec.ts",
+            "src/condominiums/condominiums.module.ts"
+          ],
+          "refs": [
+            "US-011",
+            "US-012",
+            "AC-021",
+            "AC-022",
+            "AC-023",
+            "AC-024",
+            "AC-025"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faixa-4",
+      "branch": "spec/papel-de-administrador-faixa-4",
+      "worktree": "../onp-worktrees/virtual-mural-backend-papel-de-administrador-faixa-4",
+      "tarefas": [
+        {
+          "id": "T-019",
+          "titulo": "Listagem de moradores pelo síndico",
+          "modelo": "claude-sonnet-5",
+          "esforco": "medium",
+          "arquivos": [
+            "src/users/users.controller.ts",
+            "src/users/users.service.ts",
+            "src/users/users.controller.spec.ts"
+          ],
+          "refs": [
+            "US-013",
+            "AC-026",
+            "AC-027"
+          ]
+        }
+      ]
+    }
+  ],
+  "sequenciais": [],
+  "concluidas": [],
+  "avisos": []
+}

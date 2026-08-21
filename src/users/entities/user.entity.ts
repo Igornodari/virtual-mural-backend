@@ -64,6 +64,30 @@ export class User {
   @Column({ default: false })
   onboardingCompleted: boolean;
 
+  // ── Papéis administrativos ────────────────────────────────────────────────
+
+  /**
+   * Administrador da plataforma. Atravessa a fronteira do condomínio de
+   * propósito — operar o produto exige enxergar o todo.
+   *
+   * Papel raro, atribuído à mão no banco.
+   */
+  @Column({ default: false })
+  isPlatformAdmin: boolean;
+
+  /**
+   * Síndico do condomínio ao qual este usuário já está vinculado.
+   *
+   * Não fura a fronteira do condomínio: tem mais poder DENTRO dela. Por isso
+   * não há coluna separada de condomínio administrado — é sempre o
+   * `condominiumId` do próprio usuário.
+   *
+   * Como `isProvider`, é flag aditiva e não papel exclusivo: síndico continua
+   * sendo morador e pode ser prestador.
+   */
+  @Column({ default: false })
+  isCondoManager: boolean;
+
   @Column({ default: false })
   addressCompleted: boolean;
 

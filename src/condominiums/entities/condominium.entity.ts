@@ -48,6 +48,18 @@ export class Condominium {
   @Column({ default: true })
   isActive: boolean;
 
+  /**
+   * Quem criou este condomínio.
+   *
+   * A base é alimentada pelos próprios moradores no onboarding, sem curadoria.
+   * Sem saber a origem de cada registro não há como limpar as duplicatas nem
+   * responsabilizar quem suja a base.
+   *
+   * Nullable: os registros criados antes desta coluna não têm autor conhecido.
+   */
+  @Column({ type: 'uuid', nullable: true })
+  createdById: string | null;
+
   // ── Relacionamentos ────────────────────────────────────────────────────────
   @OneToMany(() => User, (user) => user.condominium)
   users: User[];

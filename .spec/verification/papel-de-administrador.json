@@ -1,0 +1,47 @@
+{
+  "feature": "papel-de-administrador",
+  "timestamp": "2026-08-21T17:39:57.638Z",
+  "gitRev": "9370d13",
+  "command": "npm test -- --json --outputFile=.spec/verification/raw.json",
+  "reporter": "jest-json",
+  "exitCode": 0,
+  "testsParsed": 296,
+  "results": {
+    "AC-021": {
+      "status": "pass",
+      "testName": "AdminAuthorizationService morador comum não administra o próprio condomínio @spec:AC-021 não administra o próprio condomínio @spec:AC-021",
+      "method": "jest-json"
+    },
+    "AC-022": {
+      "status": "pass",
+      "testName": "AdminAuthorizationService síndico administra o próprio condomínio @spec:AC-022 administra o próprio condomínio @spec:AC-022",
+      "method": "jest-json"
+    },
+    "AC-023": {
+      "status": "pass",
+      "testName": "AdminAuthorizationService síndico não administra condomínio alheio @spec:AC-023 não administra condomínio alheio @spec:AC-023",
+      "method": "jest-json"
+    },
+    "AC-024": {
+      "status": "pass",
+      "testName": "AdminAuthorizationService administrador da plataforma administra qualquer condomínio @spec:AC-024 administra qualquer condomínio @spec:AC-024",
+      "method": "jest-json"
+    },
+    "AC-025": {
+      "status": "pass",
+      "testName": "CondominiumsController registra quem criou o condomínio @spec:AC-025 registra quem criou o condomínio @spec:AC-025",
+      "method": "jest-json"
+    },
+    "AC-026": {
+      "status": "pass",
+      "testName": "UsersController listarMoradores síndico lista os moradores do próprio condomínio @spec:AC-026 síndico lista os moradores do próprio condomínio @spec:AC-026",
+      "method": "jest-json"
+    },
+    "AC-027": {
+      "status": "pass",
+      "testName": "UsersController listarMoradores síndico não lista moradores de outro condomínio @spec:AC-027 síndico não lista moradores de outro condomínio @spec:AC-027",
+      "method": "jest-json"
+    }
+  },
+  "principles": {}
+}
