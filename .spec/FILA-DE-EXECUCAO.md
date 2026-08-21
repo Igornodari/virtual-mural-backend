@@ -38,7 +38,7 @@ tira nada daqui.
 | 0 | Remover criptografia decorativa | constituição `P-003` | ✅ removida e proibida |
 | 0 | Remover `console.log` de produção | constituição `P-004` | ✅ removido e proibido |
 | 0 | Papel de administrador e síndico | `papel-de-administrador` | ✅ provado (AC-021..027) |
-| 1 | Estorno e cancelamento | `estorno-de-agendamento` | ⬜ fila |
+| 1 | Estorno e cancelamento | `estorno-de-agendamento` | ✅ provado (AC-028..033) |
 | 1 | Taxa da plataforma numa fonte só | `taxa-unica` | ⬜ fila |
 | 1 | Saldo do prestador sem conta Connect | `saldo-sem-connect` | ⬜ fila |
 | 1 | Denúncia e moderação | `moderacao-de-conteudo` | 🔜 desbloqueada — reusa AdminAuthorizationService |
