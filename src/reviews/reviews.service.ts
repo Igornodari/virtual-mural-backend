@@ -1,11 +1,13 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from './entities/review.entity';
+import { Appointment } from '../appointments/entities/appointment.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { User } from '../users/entities/user.entity';
 import { ServicesService } from '../services/services.service';
@@ -25,11 +27,29 @@ export class ReviewsService {
   constructor(
     @InjectRepository(Review)
     private readonly reviewsRepo: Repository<Review>,
+    @InjectRepository(Appointment)
+    private readonly appointmentsRepo: Repository<Appointment>,
     private readonly servicesService: ServicesService,
     private readonly messagingService: MessagingService,
   ) {}
 
   async create(dto: CreateReviewDto, author: User): Promise<Review> {
+    // A nota só significa alguma coisa se vier de quem contratou. Sem esta
+    // trava, qualquer usuário inflava a própria reputação e afundava a do
+    // concorrente sem nunca ter contratado nada.
+    const atendimentoConcluido = await this.appointmentsRepo.count({
+      where: {
+        serviceId: dto.serviceId,
+        customerId: author.id,
+        status: 'completed',
+      },
+    });
+    if (atendimentoConcluido === 0) {
+      throw new ForbiddenException(
+        'Conclua um atendimento deste serviço antes de avaliá-lo.',
+      );
+    }
+
     // Impede avaliações duplicadas do mesmo usuário para o mesmo serviço
     const existing = await this.reviewsRepo.findOne({
       where: { serviceId: dto.serviceId, authorId: author.id },

@@ -42,12 +42,24 @@ export class ServicesService {
       );
     }
 
-    const condominiumId = dto.condominiumId ?? provider.condominiumId;
-    if (!condominiumId) {
+    if (!provider.condominiumId) {
       throw new ForbiddenException(
         'O usuário não está vinculado a nenhum condomínio.',
       );
     }
+
+    // O condomínio vem SEMPRE do vínculo do prestador. Aceitar o valor do
+    // corpo da requisição permitia publicar serviço em condomínio alheio.
+    if (
+      dto.condominiumId !== undefined &&
+      dto.condominiumId !== provider.condominiumId
+    ) {
+      throw new ForbiddenException(
+        'Você só pode publicar serviços no seu próprio condomínio.',
+      );
+    }
+
+    const condominiumId = provider.condominiumId;
 
     // availableDays é derivado dos slots (prioridade) ou enviado diretamente
     const availableDays = dto.availabilitySlots?.length
@@ -80,6 +92,72 @@ export class ServicesService {
     });
 
     return saved;
+  }
+
+  /**
+   * Fronteira do condomínio. O mural é do prédio: um morador do condomínio A
+   * não lê nem escreve nada do condomínio B.
+   *
+   * Usuário sem vínculo é negado, e recurso sem condomínio também — a ausência
+   * do dado nunca deve significar liberação.
+   */
+  private assertSameCondominium(
+    userCondominiumId: string | null | undefined,
+    resourceCondominiumId: string | null | undefined,
+    mensagem: string,
+  ): void {
+    if (!userCondominiumId || !resourceCondominiumId) {
+      throw new ForbiddenException(mensagem);
+    }
+    if (userCondominiumId !== resourceCondominiumId) {
+      throw new ForbiddenException(mensagem);
+    }
+  }
+
+  /**
+   * Listagem escopada ao condomínio do usuário. Se vier um condomínio
+   * explícito diferente do dele, recusa em vez de ignorar em silêncio —
+   * parâmetro ignorado esconde tentativa de acesso indevido.
+   */
+  async findByCondominiumForUser(
+    user: User,
+    requestedCondominiumId?: string,
+  ): Promise<Service[]> {
+    if (!user.condominiumId) {
+      throw new ForbiddenException(
+        'Vincule-se a um condomínio para ver os serviços do mural.',
+      );
+    }
+
+    if (
+      requestedCondominiumId !== undefined &&
+      requestedCondominiumId !== user.condominiumId
+    ) {
+      throw new ForbiddenException(
+        'Você só tem acesso aos serviços do seu próprio condomínio.',
+      );
+    }
+
+    return this.findByCondominium(user.condominiumId);
+  }
+
+  /**
+   * Detalhe do serviço escopado ao condomínio do usuário.
+   *
+   * A checagem NÃO fica no findOne cru de propósito: ele é reaproveitado
+   * internamente por update, remove e pelo módulo de avaliações, onde a
+   * fronteira é aplicada por outro caminho.
+   */
+  async findOneForUser(id: string, user: User): Promise<Service> {
+    const service = await this.findOne(id);
+
+    this.assertSameCondominium(
+      user.condominiumId,
+      service.condominiumId,
+      'Este serviço não está disponível no seu condomínio.',
+    );
+
+    return service;
   }
 
   async findByCondominium(condominiumId: string): Promise<Service[]> {

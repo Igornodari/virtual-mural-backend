@@ -1,0 +1,93 @@
+{
+  "feature": "integridade-do-mural",
+  "agent": "claude",
+  "geradoEm": "2026-08-21 15:55",
+  "branchTrabalho": "spec/integridade-do-mural",
+  "baseDir": ".spec/features/integridade-do-mural",
+  "specDir": ".spec",
+  "repoName": "virtual-mural-backend",
+  "logsDir": "../onp-worktrees/virtual-mural-backend-integridade-do-mural-logs",
+  "ondas": [
+    [
+      "faixa-1",
+      "faixa-2",
+      "faixa-3"
+    ]
+  ],
+  "faixas": [
+    {
+      "id": "faixa-1",
+      "branch": "spec/integridade-do-mural-faixa-1",
+      "worktree": "../onp-worktrees/virtual-mural-backend-integridade-do-mural-faixa-1",
+      "tarefas": [
+        {
+          "id": "T-011",
+          "titulo": "Fronteira do condomínio nos serviços",
+          "modelo": "claude-sonnet-5",
+          "esforco": "medium",
+          "arquivos": [
+            "src/services/services.controller.ts",
+            "src/services/services.service.ts",
+            "src/services/services.service.spec.ts",
+            "src/services/services.controller.spec.ts"
+          ],
+          "refs": [
+            "US-004",
+            "AC-010",
+            "AC-011",
+            "AC-012"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faixa-2",
+      "branch": "spec/integridade-do-mural-faixa-2",
+      "worktree": "../onp-worktrees/virtual-mural-backend-integridade-do-mural-faixa-2",
+      "tarefas": [
+        {
+          "id": "T-012",
+          "titulo": "Fronteira do condomínio e data no passado no agendamento",
+          "modelo": "claude-sonnet-5",
+          "esforco": "medium",
+          "arquivos": [
+            "src/appointments/services/appointment-creation.service.ts",
+            "src/appointments/services/appointment-creation.service.spec.ts"
+          ],
+          "refs": [
+            "US-004",
+            "US-006",
+            "AC-013",
+            "AC-016"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faixa-3",
+      "branch": "spec/integridade-do-mural-faixa-3",
+      "worktree": "../onp-worktrees/virtual-mural-backend-integridade-do-mural-faixa-3",
+      "tarefas": [
+        {
+          "id": "T-013",
+          "titulo": "Avaliação exige atendimento concluído",
+          "modelo": "claude-sonnet-5",
+          "esforco": "medium",
+          "arquivos": [
+            "src/reviews/reviews.service.ts",
+            "src/reviews/reviews.service.spec.ts",
+            "src/reviews/reviews.module.ts"
+          ],
+          "refs": [
+            "US-005",
+            "AC-014",
+            "AC-015"
+          ]
+        }
+      ]
+    }
+  ],
+  "sequenciais": [],
+  "concluidas": [],
+  "avisos": []
+}

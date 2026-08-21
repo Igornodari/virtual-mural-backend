@@ -5,325 +5,325 @@
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-001",
-      "ocorrencias": 2,
+      "ocorrencias": 8,
       "primeiraVez": "2026-08-19T15:24:03.037Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-002": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-002",
-      "ocorrencias": 4,
+      "ocorrencias": 16,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-003": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-003",
-      "ocorrencias": 3,
+      "ocorrencias": 12,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-004": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-004",
-      "ocorrencias": 3,
+      "ocorrencias": 12,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-005": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-005",
-      "ocorrencias": 2,
+      "ocorrencias": 8,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-006": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-006",
-      "ocorrencias": 2,
+      "ocorrencias": 8,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-007": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-007",
-      "ocorrencias": 3,
+      "ocorrencias": 12,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-008": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-008",
-      "ocorrencias": 2,
+      "ocorrencias": 8,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-009": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-009",
-      "ocorrencias": 3,
+      "ocorrencias": 12,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_INEXISTENTE::verificacao-morador::T-010": {
       "codigo": "ARQUIVO_INEXISTENTE",
       "feature": "verificacao-morador",
       "ref": "T-010",
-      "ocorrencias": 3,
+      "ocorrencias": 12,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-001": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-001",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-002": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-002",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-003": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-003",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-004": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-004",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-005": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-005",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-006": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-006",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-007": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-007",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.940Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-008": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-008",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "AC_SEM_TESTE::verificacao-morador::AC-009": {
       "codigo": "AC_SEM_TESTE",
       "feature": "verificacao-morador",
       "ref": "AC-009",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/app.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/app.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/app.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/app.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/app.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/app.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/appointments.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/appointments.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/appointments.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/appointments.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/constants/appointment-availability.contants.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/constants/appointment-availability.contants.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/constants/appointment-status.contants.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/constants/appointment-status.contants.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/dto/create-appointment-payment.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/dto/create-appointment-payment.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/dto/create-appointment.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/dto/create-appointment.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/dto/update-appointment-status.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/dto/update-appointment-status.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/entities/appointment.entity.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/entities/appointment.entity.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/entities/payment.entity.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/entities/payment.entity.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/payment/mock-payment-gateway.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/payment/mock-payment-gateway.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/payment/payment-gateway.interface.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/payment/payment-gateway.interface.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/payment/stripe-payment-gateway.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/payment/stripe-payment-gateway.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/schedulers/appointment-reminder.scheduler.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/schedulers/appointment-reminder.scheduler.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/services/appointment-availability.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/services/appointment-availability.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/services/appointment-creation.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
@@ -338,568 +338,568 @@
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/services/appointment-notification.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/services/appointment-payment.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/services/appointment-payment.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/services/appointment-query.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/services/appointment-query.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/services/appointment-status.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/services/appointment-status.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/services/appointments.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/services/appointments.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/types/appointment.type.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/types/appointment.type.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/utils/appointment-date.util.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/utils/appointment-date.util.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/utils/appointment-time-slots.util.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/utils/appointment-time-slots.util.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/appointments/webhooks/stripe-webhooks.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/appointments/webhooks/stripe-webhooks.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/auth/auth.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/auth/auth.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/auth/auth.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/auth/auth.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/auth/strategies/cognito-jwt.strategy.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/auth/strategies/cognito-jwt.strategy.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/common/decorators/current-user.decorator.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/common/decorators/current-user.decorator.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/common/filters/http-exception.filter.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/common/filters/http-exception.filter.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/common/filters/throttle-exception.filter.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/common/filters/throttle-exception.filter.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/common/guards/jwt-auth.guard.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/common/guards/jwt-auth.guard.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/common/interceptors/logging.interceptor.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/common/interceptors/logging.interceptor.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/condominiums/condominiums.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/condominiums/condominiums.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/condominiums/condominiums.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/condominiums/condominiums.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/condominiums/condominiums.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/condominiums/condominiums.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/condominiums/dto/create-condominium.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/condominiums/dto/create-condominium.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/condominiums/dto/update-condominium.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/condominiums/dto/update-condominium.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/condominiums/entities/condominium.entity.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/condominiums/entities/condominium.entity.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/data-source.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/data-source.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1710000000000-AddAvailabilitySlotsToServices.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1710000000000-AddAvailabilitySlotsToServices.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1710000000001-AddScheduledTimeToAppointments.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1710000000001-AddScheduledTimeToAppointments.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1714900000000-AddStripeConnectFieldsToUsers.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1714900000000-AddStripeConnectFieldsToUsers.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1747000000000-AddIsProviderToUsers.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1747000000000-AddIsProviderToUsers.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1747500000000-DropLegacyRoleColumnsFromUsers.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1747500000000-DropLegacyRoleColumnsFromUsers.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1748000000000-AddReminderSentAtToAppointments.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1748000000000-AddReminderSentAtToAppointments.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1748000000001-CreateNotificationsAndPushSubscriptionsTables.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1748000000001-CreateNotificationsAndPushSubscriptionsTables.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1748500000000-AddTermsAcceptedAtToUsers.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1748500000000-AddTermsAcceptedAtToUsers.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.047Z",
-      "ultimaVez": "2026-08-19T15:24:03.047Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780689584408-FixMissingIsProviderOnUsers.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780689584408-FixMissingIsProviderOnUsers.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780690148105-EnsureIsProviderColumnOnUsers.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780690148105-EnsureIsProviderColumnOnUsers.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780692130773-EnsureUserMissingColumns.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780692130773-EnsureUserMissingColumns.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780692398188-EnsureServiceAvailabilitySlotsColumn.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780692398188-EnsureServiceAvailabilitySlotsColumn.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780692622282-EnsureAppointmentScheduleColumns.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780692622282-EnsureAppointmentScheduleColumns.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780692903298-EnsurePaymentCheckoutSessionColumn.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780692903298-EnsurePaymentCheckoutSessionColumn.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780700000000-EnsureUserOnboardingColumns.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780700000000-EnsureUserOnboardingColumns.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/database/migrations/1780710000000-AddDurationAndBreakToServices.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/database/migrations/1780710000000-AddDurationAndBreakToServices.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/health/health.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/health/health.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/health/health.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/health/health.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/health/health.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/health/health.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/main.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/main.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/messaging/consumers/dead-letter-queue.consumer.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/messaging/consumers/dead-letter-queue.consumer.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/messaging/consumers/mural-events.consumer.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/messaging/consumers/mural-events.consumer.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/messaging/events/mural.events.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/messaging/events/mural.events.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/messaging/messaging.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/messaging/messaging.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/messaging/messaging.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/messaging/messaging.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/README.md": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/README.md",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/dto/list-notifications.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/dto/list-notifications.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/dto/register-push-subscription.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/dto/register-push-subscription.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/entities/notification.entity.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/entities/notification.entity.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/entities/push-subscription.entity.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/entities/push-subscription.entity.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/in-app-notifications.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/in-app-notifications.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/notifications.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/notifications.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/notifications.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/notifications.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/notifications.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/notifications.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/web-push.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/web-push.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/notifications/whatsapp.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/notifications/whatsapp.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/reviews/dto/create-review.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/reviews/dto/create-review.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/reviews/entities/review.entity.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/reviews/entities/review.entity.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/reviews/reviews.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/reviews/reviews.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/reviews/reviews.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
@@ -923,64 +923,64 @@
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/sentry/sentry.reporter.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/services/constants/weekdays.constant.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/services/constants/weekdays.constant.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/services/dto/availability-slot.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/services/dto/availability-slot.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/services/dto/create-service.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/services/dto/create-service.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/services/dto/update-service.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/services/dto/update-service.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/services/entities/service.entity.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/services/entities/service.entity.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/services/services.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/services/services.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/services/services.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
@@ -995,82 +995,82 @@
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/stripe-connect/stripe-connect.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/stripe-connect/stripe-connect.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/stripe-connect/stripe-connect.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/stripe-connect/stripe-connect.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/stripe-connect/stripe-connect.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/test/integration-helpers.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/test/integration-helpers.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/users/dto/update-onboarding.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/users/dto/update-onboarding.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/users/dto/update-profile.dto.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/users/dto/update-profile.dto.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/users/users.controller.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/users/users.controller.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/users/users.module.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/users/users.module.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     },
     "ARQUIVO_ORFAO::—::src/users/users.service.ts": {
       "codigo": "ARQUIVO_ORFAO",
       "feature": "—",
       "ref": "src/users/users.service.ts",
-      "ocorrencias": 1,
+      "ocorrencias": 4,
       "primeiraVez": "2026-08-19T15:24:03.048Z",
-      "ultimaVez": "2026-08-19T15:24:03.048Z",
-      "gitRev": "5956225"
+      "ultimaVez": "2026-08-21T16:05:06.941Z",
+      "gitRev": "c3e63fd"
     }
   }
 }
