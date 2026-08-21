@@ -19,7 +19,9 @@ export const VALID_APPOINTMENT_TRANSITIONS: Record<
   pending: ['confirmed', 'cancelled'],
   confirmed: ['cancelled'],
   awaiting_payment: [],
-  paid: ['completed'],
+  // `paid` passa a poder ir para `cancelled`: o cancelamento com estorno é
+  // o caminho que faltava. Antes, dinheiro pago não tinha volta pelo app.
+  paid: ['completed', 'cancelled'],
   cancelled: [],
   completed: [],
 };

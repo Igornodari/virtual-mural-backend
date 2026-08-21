@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
-import { Payment } from './entities/payment.entity';
+import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
 import { CreateAppointmentPaymentDto } from './dto/create-appointment-payment.dto';
@@ -597,7 +597,7 @@ export class AppointmentsService {
     customer: User,
   ): Promise<{
     paymentId: string;
-    paymentStatus: 'pending' | 'processing' | 'paid' | 'failed';
+    paymentStatus: PaymentStatus;
     checkoutUrl?: string;
     checkoutSessionId?: string;
     qrCode?: string;
@@ -670,7 +670,13 @@ export class AppointmentsService {
           `existing=${existing ? `id=${existing.id} status=${existing.status} checkoutUrl=${existing.checkoutUrl}` : 'null'}`,
       );
 
-      if (existing && existing.status !== 'failed') {
+      // Pagamento estornado NUNCA é reaproveitado: reutilizá-lo devolveria ao
+      // cliente uma cobrança que já foi desfeita. Hoje o caminho é inalcançável
+      // porque o agendamento fica `cancelled` e esta rota exige `confirmed` ou
+      // `awaiting_payment`, mas a guarda precisa ser explícita.
+      const NAO_REAPROVEITAVEIS: PaymentStatus[] = ['failed', 'refunded'];
+
+      if (existing && !NAO_REAPROVEITAVEIS.includes(existing.status)) {
         // Verifica se a checkoutUrl existente é válida (deve ser cs_... para credit_card)
         const isStaleUrl =
           dto.method === 'credit_card' &&

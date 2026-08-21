@@ -1,12 +1,17 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Appointment } from '../entities/appointment.entity';
+import { Payment } from '../entities/payment.entity';
+import type { IPaymentGateway } from '../payment/payment-gateway.interface';
 
 import { UpdateAppointmentStatusDto } from '../dto/update-appointment-status.dto';
 
@@ -30,9 +35,17 @@ export class AppointmentStatusService {
     @InjectRepository(Appointment)
     private readonly appointmentsRepo: Repository<Appointment>,
 
+    @InjectRepository(Payment)
+    private readonly paymentsRepo: Repository<Payment>,
+
     private readonly appointmentQueryService: AppointmentQueryService,
     private readonly notificationService: AppointmentNotificationService,
+
+    @Inject('PAYMENT_GATEWAY')
+    private readonly paymentGateway: IPaymentGateway,
   ) {}
+
+  private readonly logger = new Logger(AppointmentStatusService.name);
 
   async updateStatus(
     id: string,
@@ -109,11 +122,36 @@ export class AppointmentStatusService {
       );
     }
 
-    if (!CUSTOMER_CANCELLABLE_STATUSES.includes(appointment.status)) {
+    const estaPago = appointment.status === 'paid';
+
+    if (
+      !estaPago &&
+      !CUSTOMER_CANCELLABLE_STATUSES.includes(appointment.status)
+    ) {
       throw new BadRequestException(
-        `Não é possível cancelar um agendamento com status "${appointment.status}". ` +
-          `Após o pagamento confirmado o cancelamento deve ser tratado diretamente com o prestador.`,
+        `Não é possível cancelar um agendamento com status "${appointment.status}".`,
       );
+    }
+
+    if (estaPago) {
+      // A régua é o horário do agendamento. Depois dele o serviço pode ter
+      // sido prestado, e devolver automaticamente puniria o prestador.
+      if (
+        hasAppointmentDateTimePassed(
+          appointment.scheduledDate,
+          appointment.scheduledTime,
+        )
+      ) {
+        throw new BadRequestException(
+          'O horário deste agendamento já passou. O cancelamento precisa ser ' +
+            'tratado diretamente com o prestador.',
+        );
+      }
+
+      // Estornar ANTES de cancelar. Se o provedor recusar, o agendamento
+      // permanece pago — cancelar primeiro criaria agendamento cancelado com
+      // o dinheiro retido, que é justamente o problema a resolver.
+      await this.estornarPagamento(appointment.id);
     }
 
     appointment.status = 'cancelled';
@@ -123,6 +161,46 @@ export class AppointmentStatusService {
     await this.notificationService.publishAppointmentStatusChanged(saved);
 
     return saved;
+  }
+
+  /**
+   * Solicita o estorno do pagamento confirmado do agendamento.
+   *
+   * Marca o pagamento como estornado só depois de o provedor aceitar o
+   * pedido. A liquidação efetiva leva dias e chega por webhook — aqui basta
+   * saber que o pedido foi aceito.
+   */
+  private async estornarPagamento(appointmentId: string): Promise<void> {
+    const pagamento = await this.paymentsRepo.findOne({
+      where: { appointmentId, status: 'paid' },
+    });
+
+    if (!pagamento) {
+      throw new BadRequestException(
+        'Não foi encontrado um pagamento confirmado para este agendamento.',
+      );
+    }
+
+    try {
+      const estorno = await this.paymentGateway.refundPayment(
+        pagamento.externalPaymentId,
+      );
+
+      pagamento.status = 'refunded';
+      await this.paymentsRepo.save(pagamento);
+
+      this.logger.log(
+        `Estorno ${estorno.refundId} solicitado para o agendamento ${appointmentId}`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Falha ao estornar o agendamento ${appointmentId}: ${(err as Error).message}`,
+      );
+      throw new InternalServerErrorException(
+        'Não foi possível processar o estorno agora. O agendamento continua ' +
+          'ativo — tente novamente em instantes.',
+      );
+    }
   }
 
   private async assertNoServiceTimeConflict(

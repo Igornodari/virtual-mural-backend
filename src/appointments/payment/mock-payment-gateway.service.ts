@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IPaymentGateway } from './payment-gateway.interface';
+import { IPaymentGateway, RefundResult } from './payment-gateway.interface';
 import { Appointment } from '../entities/appointment.entity';
 import { AppointmentPaymentResult } from '../dto/create-appointment-payment.dto';
 
@@ -25,6 +25,13 @@ export class MockPaymentGatewayService implements IPaymentGateway {
       paymentId,
       paymentStatus: 'paid',
       checkoutUrl: `https://mock-checkout.example.com/${paymentId}`,
+    });
+  }
+
+  refundPayment(externalPaymentId: string): Promise<RefundResult> {
+    return Promise.resolve({
+      refundId: `mock-refund-${externalPaymentId}`,
+      amountCents: 0,
     });
   }
 }

@@ -12,7 +12,7 @@ import { Repository } from 'typeorm';
 import Stripe from 'stripe';
 
 import { Appointment } from '../entities/appointment.entity';
-import { Payment } from '../entities/payment.entity';
+import { Payment, PaymentStatus } from '../entities/payment.entity';
 import { Service } from '../../services/entities/service.entity';
 import { User } from '../../users/entities/user.entity';
 
@@ -60,7 +60,7 @@ export class AppointmentPaymentService {
     customer: User,
   ): Promise<{
     paymentId: string;
-    paymentStatus: 'pending' | 'processing' | 'paid' | 'failed';
+    paymentStatus: PaymentStatus;
     checkoutUrl?: string;
     checkoutSessionId?: string;
     qrCode?: string;
@@ -134,7 +134,11 @@ export class AppointmentPaymentService {
           }`,
       );
 
-      if (existing && existing.status !== 'failed') {
+      // Pagamento estornado NUNCA é reaproveitado: reutilizá-lo devolveria ao
+      // cliente uma cobrança que já foi desfeita.
+      const NAO_REAPROVEITAVEIS: PaymentStatus[] = ['failed', 'refunded'];
+
+      if (existing && !NAO_REAPROVEITAVEIS.includes(existing.status)) {
         const isStaleUrl =
           dto.method === 'credit_card' &&
           existing.checkoutUrl &&
