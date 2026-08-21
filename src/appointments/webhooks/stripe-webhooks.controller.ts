@@ -4,6 +4,9 @@ import Stripe from 'stripe';
 import { AppointmentsService } from '../services/appointments.service';
 import { StripeConnectService } from '../../stripe-connect/stripe-connect.service';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ProcessedWebhookEvent } from '../entities/processed-webhook-event.entity';
 
 @Controller('stripe')
 export class StripeWebhooksController {
@@ -14,6 +17,8 @@ export class StripeWebhooksController {
     private readonly appointmentsService: AppointmentsService,
     private readonly stripeConnectService: StripeConnectService,
     private readonly configService: ConfigService,
+    @InjectRepository(ProcessedWebhookEvent)
+    private readonly processedEventsRepo: Repository<ProcessedWebhookEvent>,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) {
@@ -77,6 +82,25 @@ export class StripeWebhooksController {
 
     this.logger.log(`Stripe webhook recebido: ${event.type}`);
 
+    // ── Idempotência ────────────────────────────────────────────────────────
+    // A Stripe reentrega o mesmo evento por desenho. A checagem vem DEPOIS da
+    // validação de assinatura de propósito: evento não autenticado nunca toca
+    // o registro, senão viraria vetor para marcar eventos legítimos como já
+    // processados.
+    const jaProcessado = await this.processedEventsRepo.findOne({
+      where: { eventId: event.id },
+    });
+
+    if (jaProcessado) {
+      this.logger.log(
+        `Evento ${event.id} (${event.type}) já processado em ` +
+          `${jaProcessado.processedAt.toISOString()} — ignorando reentrega`,
+      );
+      // 200 e não 4xx: erro faria a Stripe reentregar de novo, que é
+      // exatamente o que estamos evitando.
+      return res.json({ received: true, duplicate: true });
+    }
+
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
@@ -129,6 +153,31 @@ export class StripeWebhooksController {
         this.logger.log(`Evento Stripe ignorado: ${event.type}`);
     }
 
+    // Registrar só depois do processamento dar certo: se algo acima lançar,
+    // o evento não fica marcado e a próxima reentrega tenta de novo.
+    await this.registrarProcessado(event.id, event.type);
+
     return res.json({ received: true });
+  }
+
+  /**
+   * Marca o evento como processado.
+   *
+   * Tolera violação de chave primária sem derrubar a resposta: em duas
+   * entregas concorrentes do mesmo evento, o segundo a chegar simplesmente
+   * perde a corrida — o trabalho já foi feito de qualquer forma.
+   */
+  private async registrarProcessado(
+    eventId: string,
+    eventType: string,
+  ): Promise<void> {
+    try {
+      await this.processedEventsRepo.insert({ eventId, eventType });
+    } catch (err) {
+      this.logger.warn(
+        `Não foi possível registrar o evento ${eventId} como processado ` +
+          `(provável entrega concorrente): ${(err as Error).message}`,
+      );
+    }
   }
 }

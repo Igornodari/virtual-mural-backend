@@ -1,0 +1,32 @@
+{
+  "feature": "webhook-idempotente",
+  "timestamp": "2026-08-21T16:27:10.828Z",
+  "gitRev": "669bc1e",
+  "command": "npm test -- --json --outputFile=.spec/verification/raw.json",
+  "reporter": "jest-json",
+  "exitCode": 0,
+  "testsParsed": 277,
+  "results": {
+    "AC-017": {
+      "status": "pass",
+      "testName": "StripeWebhooksController idempotência processa e registra um evento novo @spec:AC-017 processa e registra um evento novo @spec:AC-017",
+      "method": "jest-json"
+    },
+    "AC-018": {
+      "status": "pass",
+      "testName": "StripeWebhooksController idempotência ignora um evento já processado @spec:AC-018 ignora um evento já processado @spec:AC-018",
+      "method": "jest-json"
+    },
+    "AC-019": {
+      "status": "pass",
+      "testName": "StripeWebhooksController idempotência não registra evento com assinatura inválida @spec:AC-019 não registra evento com assinatura inválida @spec:AC-019",
+      "method": "jest-json"
+    },
+    "AC-020": {
+      "status": "pass",
+      "testName": "StripeWebhooksController idempotência não marca como processado quando o handler falha @spec:AC-020 não marca como processado quando o handler falha @spec:AC-020",
+      "method": "jest-json"
+    }
+  },
+  "principles": {}
+}
